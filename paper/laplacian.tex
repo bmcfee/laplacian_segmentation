@@ -58,6 +58,8 @@ The abstract should be placed at the top left column and should contain about 15
 
 \cite{serra2012unsupervised}
 
+\cite{grohganz2013converting}
+
 \subsection{Preliminaries}
 % Define the graph laplacian, and the random-walk normalized variant
 % define segmentation notation: 
@@ -84,19 +86,19 @@ $k$-nearest-neighbors.
 % Fill in non-repeating regions with a planted clique
 \begin{figure}
 \centering
-\includegraphics[width=0.95\columnwidth]{figs/recurrence}
+\includegraphics[width=\columnwidth]{figs/recurrence}
 \caption{Upper-left: the raw recurrence matrix for \emph{The Beatles -- Come Together}; upper-right: the
 recurrence matrix after diagonal filtering; lower-left: a close-up of the first 140 beats; lower-right the first
-10 basis features, ordered bottom-to-top.  The first four rows encode segment membership.\label{recurrence}}
+10 basis features, ordered bottom-to-top.  The first four rows encode the primary structural components.\label{recurrence}}
 \end{figure}
 
  
 \begin{figure*}
 \centering
-\includegraphics[width=0.95\textwidth]{figs/lowrank}
-\caption{Pairwise frame similarity using the first $m$ components for \emph{The Beatles -- Come Together}.  The first
+\includegraphics[width=\textwidth]{figs/lowrank}
+\caption{Pairwise frame similarity using the first $5$ components for \emph{The Beatles -- Come Together}.  The first
 (trivial) component ($m=1$) captures the entire song, and the second ($m=2$) separates the solo and outro from the
-rest of the song.  Subsequent refinements separate the verses and refrains.\label{lowrank}}
+rest of the song.  Subsequent refinements separate the verses and refrains, and then encode internal structure.\label{lowrank}}
 \end{figure*}
 
 \section{Algorithms}
