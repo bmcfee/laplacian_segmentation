@@ -218,8 +218,6 @@ def label_clusterer(Lf, k_min, k_max):
         if best_boundaries is None or (k_min < len(boundaries) and len(boundaries) <= k_max):
             best_boundaries = boundaries
             best_n_types    = n_types
-        elif len(boundaries) > k_max:
-            break
     
     intervals, labels = label_rep_sections(Lf[:best_n_types], best_boundaries, best_n_types)
     
