@@ -71,7 +71,7 @@ def get_annotation(song, rootpath):
 # <codecell>
 
 def import_data(song, rootpath, output_path):
-        data_file = '%s/features/JAMS/%s.pickle' % (output_path, os.path.splitext(os.path.basename(song))[0])
+        data_file = '%s/features/SALAMI/%s.pickle' % (output_path, os.path.splitext(os.path.basename(song))[0])
 
         if os.path.exists(data_file):
             with open(data_file, 'r') as f:
@@ -101,7 +101,7 @@ def import_data(song, rootpath, output_path):
 
 # <codecell>
 
-def make_dataset(n=None, n_jobs=16, rootpath='JAMS/', output_path='data/'):
+def make_dataset(n=None, n_jobs=16, rootpath='SALAMI/', output_path='data/'):
     
     EXTS = ['mp3', 'wav', 'ogg', 'flac', 'm4a', 'aac']
     files = []
