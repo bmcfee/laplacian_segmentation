@@ -25,19 +25,20 @@ import sklearn.cluster
 import librosa
 
 REP_WIDTH=3
-FILTER_WIDTH=15
+FILTER_WIDTH=13
 HOP_LENGTH=512
 SR=22050
 MAX_REP=12
 
 GAP_THRESHOLD = 1e-7
-EDGE_THRESHOLD = 1e-10
+EDGE_THRESHOLD = 1e-12
 
 MIN_SEG=10.0
 MAX_SEG=45.0
 
 MIN_TEMPO=70.0
 MIN_NON_REPEATING = 4
+MAX_FILTER_WIDTH  = 5
 
 DISTANCE_QUANTILE = 0.5
 
@@ -202,6 +203,13 @@ def graph_autogain(V, tau):
     
     return -np.log(tau) / np.max(V)
 
+def non_maximal(dists):
+    '''Send distances to zero if they're not the maximum within some range'''
+    
+    max_dists = scipy.ndimage.maximum_filter1d(dists, MAX_FILTER_WIDTH)
+    
+    return dists * (dists >= max_dists)
+
 def make_boundary_graph(X):
     
     n = X.shape[1]
@@ -212,16 +220,16 @@ def make_boundary_graph(X):
     
     # Estimate the bandwidth based on how many links you expect to cut
     # Scale by so that the max distance gets pushed to below some maximum value
-    D_norm = D / sigma
+    dists = np.diag(D / sigma, k=1)
 
-    alpha = graph_autogain(np.diag(D_norm, k=1), EDGE_THRESHOLD)
-    
-    A = np.exp(- alpha * D_norm)
-    
-    # Generate the masking matrix
-    Mx = np.eye(n) + np.eye(n, k=1) + np.eye(n, k=-1)
-    
-    return A * Mx
+    alpha = graph_autogain(dists, EDGE_THRESHOLD)
+
+    dists = non_maximal(dists)
+    A = np.eye(n)
+    A[range(n-1), range(1, n)] = np.exp(-alpha * dists)
+
+    return np.maximum(A, A.T)
+
 
 def factor_and_gap(L, k_max=None):
     e_vals, e_vecs = scipy.linalg.eig(L)
@@ -338,7 +346,6 @@ def do_segmentation(X, beats, parameters):
     # Output lab file
     print '\tsaving output to ', parameters['output_file']
     save_segments(parameters['output_file'], best_boundaries, beats, labels)
-
 
 def process_arguments():
     parser = argparse.ArgumentParser(description='Music segmentation')
