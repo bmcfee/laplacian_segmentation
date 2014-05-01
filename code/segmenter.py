@@ -184,6 +184,7 @@ def rw_laplacian(A):
 def factorize(L, k=20):
     e_vals, e_vecs = scipy.linalg.eig(L)
     e_vals = e_vals.real
+    e_vecs = e_vecs.real
     idx    = np.argsort(e_vals)
     
     e_vals = e_vals[idx]
