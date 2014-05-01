@@ -6,10 +6,11 @@
 \documentclass{article}
 \usepackage{ismir2014,amsmath,cite}
 \usepackage{graphicx}
+\usepackage{brian}
 
 % Title.
 % ------
-\title{PAPER TEMPLATE FOR ISMIR 2014}
+\title{Analyzing song structure with graph Laplacians}
 
 % Single address
 % To use with only one author or several with the same address
@@ -49,148 +50,81 @@ The abstract should be placed at the top left column and should contain about 15
 %
 \section{Introduction}\label{sec:introduction}
 
-This template includes all the information about formatting manuscripts for the ISMIR 2014.
-Please follow these guidelines to give the final proceedings a uniform look.
-If you have any questions, please contact the Conference Management.
-This template can be downloaded from the ISMIR 2014 web site (http://ismir2014.ismir.net).
+\subsection{Our contributions}
 
-\section{Page Size}\label{sec:page_size}
+\subsection{Related work}
 
-The proceedings will be printed on
- \underline{portrait A4-size paper} \underline{(21.0cm x 29.7cm)}.
-All material on each page should fit within a rectangle of 17.2cm x 25.2cm,
-centered on the page, beginning 2.0cm
-from the top of the page and ending with 2.5cm from the bottom.
-The left and right margins should be 1.9cm.
-The text should be in two 8.2cm columns with a 0.8cm gutter.
-All text must be in a two-column format.
-Text must be fully justified.
+\cite{chung1997spectral, von2007tutorial}
 
-\section{Typeset Text}\label{sec:typeset_text}
+\cite{serra2012unsupervised}
 
-\subsection{Normal or Body Text}\label{subsec:body}
+\subsection{Preliminaries}
+% Define the graph laplacian, and the random-walk normalized variant
+% define segmentation notation: 
+%   d = input dimension
+%   n = number of frames, 
+%   s = number of segments, 
+%   m = number of segment types
+Let $X = [x_1, x_2, \dots, x_n] \in \R^{d\times n}$ denote a $d$-dimensional time
+series feature matrix.  The \emph{binary recurrence matrix} $R_k \in \{0,1\}^{n\times
+n}$ is a matrix where $R_{ij}$ is $1$ if and only if $x_i$ and $x_j$ are mutual 
+$k$-nearest-neighbors.
 
-Please use a 10pt (point) Times font. Sans-serif or non-proportional fonts
-can be used only for special purposes, such as distinguishing source code text.
+\section{Encoding repetition}
+% Begin with nearest-neighbor linkage in some feature space
+% Apply diagonal majority vote filtering
+% Add the conveyor belt links
+% Compute the graph laplacian, observe magic
 
-The first paragraph in each section should not be indented, but all other paragraphs should be.
 
-\subsection{Title and Authors}
+% Additional eigenvectors encode nested structures
+% Pick a nice example here.  Maybe nirvana or green day?  Beatles would be fine too.
 
-The title is 14pt Times, bold, caps, upper case, centered.
-Authors' names are omitted when submitting for double-blind reviewing.
-The following is for making a camera-ready version.
-Authors' names are centered.
-The lead author's name is to be listed first (left-most), and the co-authors' names after.
-If the addresses for all authors are the same, include the address only once, centered.
-If the authors have different addresses, put the addresses, evenly spaced, under each authors' name.
-
-\subsection{First Page Copyright Notice}
-
-Please include the copyright notice exactly as it appears here in the lower left-hand corner of the page.
-It is set in 8pt Times.
-
-\subsection{Page Numbering, Headers and Footers}
-
-Do not include headers, footers or page numbers in your submission.
-These will be added when the publications are assembled.
-
-\section{First Level Headings}
-
-First level headings are in Times 10pt bold,
-centered with 1 line of space above the section head, and 1/2 space below it.
-For a section header immediately followed by a subsection header, the space should be merged.
-
-\subsection{Second Level Headings}
-
-Second level headings are in Times 10pt bold, flush left,
-with 1 line of space above the section head, and 1/2 space below it.
-The first letter of each significant word is capitalized.
-
-\subsubsection{Third and Further Level Headings}
-
-Third level headings are in Times 10pt italic, flush left,
-with 1/2 line of space above the section head, and 1/2 space below it.
-The first letter of each significant word is capitalized.
-
-Using more than three levels of headings is highly discouraged.
-
-\section{Footnotes and Figures}
-
-\subsection{Footnotes}
-
-Indicate footnotes with a number in the text.\footnote{This is a footnote.}
-Use 8pt type for footnotes. Place the footnotes at the bottom of the page on which they appear.
-Precede the footnote with a 0.5pt horizontal rule.
-
-\subsection{Figures, Tables and Captions}
-
-All artwork must be centered, neat, clean, and legible.
-All lines should be very dark for purposes of reproduction and art work should not be hand-drawn.
-The proceedings are not in color, and therefore all figures must make sense in black-and-white form.
-Figure and table numbers and captions always appear below the figure.
-Leave 1 line space between the figure or table and the caption.
-Each figure or table is numbered consecutively. Captions should be Times 10pt.
-Place tables/figures in text as close to the reference as possible.
-References to tables and figures should be capitalized, for example:
-see \figref{fig:example} and \tabref{tab:example}.
-Figures and tables may extend across both columns to a maximum width of 17.2cm.
-
-\begin{table}
- \begin{center}
- \begin{tabular}{|l|l|}
-  \hline
-  String value & Numeric value \\
-  \hline
-  Hello ISMIR  & 2014 \\
-  \hline
- \end{tabular}
-\end{center}
- \caption{Table captions should be placed below the table.}
- \label{tab:example}
-\end{table}
-
+% Addenda:
+% Fill in non-repeating regions with a planted clique
 \begin{figure}
- \caption{Figure captions should be placed below the figure.}
- \label{fig:example}
+\centering
+\includegraphics[width=0.95\columnwidth]{figs/recurrence}
+\caption{Upper-left: the raw recurrence matrix for \emph{The Beatles -- Come Together}; upper-right: the
+recurrence matrix after diagonal filtering; lower-left: a close-up of the first 140 beats; lower-right the first
+10 basis features, ordered bottom-to-top.  The first four rows encode segment membership.\label{recurrence}}
 \end{figure}
 
-\section{Equations}
+ 
+\begin{figure*}
+\centering
+\includegraphics[width=0.95\textwidth]{figs/lowrank}
+\caption{Pairwise frame similarity using the first $m$ components for \emph{The Beatles -- Come Together}.  The first
+(trivial) component ($m=1$) captures the entire song, and the second ($m=2$) separates the solo and outro from the
+rest of the song.  Subsequent refinements separate the verses and refrains.\label{lowrank}}
+\end{figure*}
 
-Equations should be placed on separated lines and numbered.
-The number should be on the right side, in parentheses.
+\section{Algorithms}
 
-\begin{equation}
-E=mc^{2}
-\end{equation}
+\subsection{Change-point detection}
+% For a fixed number of segment types, how can we do change-point detection?
+% Partition the sequential linkage graph A
+% Use repetition features to define the edge weights
+% 1. Estimate the number of segments k
+% 2. Score the partitioning by the spectral gap $\lambda_k$
 
-\section{Citations}
+\subsection{Structure annotation}
+% For each m in 2 .. M:
+%   boundaries[m], gap[m] = change_point(Y[:m])
+% m <- argmax gap
+% compute segment centroids over boundaries[m], and cluster by k-means with k=m
+% return boundary times and segment labels
 
-All bibliographical references should be listed at the end,
-inside a section named ``REFERENCES,'' numbered and in alphabetical order.
-Also, all references listed should be cited in the text.
-When referring to a document, type the numbering square brackets
-\cite{Author:00} or \cite{Author:00,Someone:10,Someone:04}.
+\section{Experiments}
 
-\begin{thebibliography}{citations}
+\subsection{Data}
 
-\bibitem {Author:00}
-E. Author:
-``The Title of the Conference Paper,''
-{\it Proceedings of the International Symposium
-on Music Information Retrieval}, pp.~000--111, 2000.
+\subsection{Implementation}
 
-\bibitem{Someone:10}
-A. Someone, B. Someone, and C. Someone:
-``The Title of the Journal Paper,''
-{\it Journal of New Music Research},
-Vol.~A, No.~B, pp.~111--222, 2010.
+\subsection{Results}
 
-\bibitem{Someone:04} X. Someone and Y. Someone: {\it Title of the Book},
-    Editorial Acme, Porto, 2012.
+\section{Discussion}
 
-\end{thebibliography}
-
-%\bibliography{ismir2014template}
+\bibliography{refs}
 
 \end{document}

@@ -57,7 +57,7 @@
 }}
 \def\SUBGRAD{{%
     \,\setbox0\hbox{\raisebox{0.35ex}{$\cdot$}}%
-    \rlap{\hbox{}to \wd0{\hss$\nabla$\hss}}\box0\!%
+    \rlap{\hbox to \wd0{\hss$\nabla$\hss}}\box0\!%
 }}
 
 
@@ -66,23 +66,21 @@
                     \raisebox{-0.25ex}{$\m@th\cdot$}}%
                     =}
 
-\DeclareMathOperator*{\gmean}{gmean}
-\DeclareMathOperator*{\mean}{mean}
 \DeclareMathOperator{\trace}{tr}
 \DeclareMathOperator*{\argmax}{argmax}
 \DeclareMathOperator*{\argmin}{argmin}
 \DeclareMathOperator{\suchthat}{s.t.}
-\DeclareMathOperator*{\median}{median}
+\DeclareMathOperator{\median}{median}
 \DeclareMathOperator{\quantile}{quantile}
 \DeclareMathOperator{\diag}{diag}
 \DeclareMathOperator{\spl}{split}
 \DeclareMathOperator{\rank}{rank}
 \DeclareMathOperator{\dom}{dom}
 
-\def\eg{\emph{e.g.}}
-\def\ie{\emph{i.e.}}
-\def\etc{\emph{etc.}}
-\def\etal{\emph{et al.}}
+\def\eg{\emph{e.g.\/}}
+\def\ie{\emph{i.e.\/}}
+\def\etc{\emph{etc.\/}}
+\def\etal{\emph{et al.\/}}
 
 
 \renewcommand{\algorithmicrequire}{\textbf{Input:}}
@@ -91,5 +89,9 @@
 
 \usepackage{eqparbox}
 \renewcommand{\algorithmiccomment}[1]{\hfill\eqparbox{COMMENT}{$\sslash$ #1}}
+
+\newtheorem{proposition}{Proposition}
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
 
 
