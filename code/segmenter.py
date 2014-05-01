@@ -28,7 +28,7 @@ import librosa
 REP_WIDTH=3
 
 # Only consider repetitions of at least (FILTER_WIDTH-1)/2
-FILTER_WIDTH=17
+FILTER_WIDTH=9
 
 # Sample rate for signal analysis
 SR=22050
