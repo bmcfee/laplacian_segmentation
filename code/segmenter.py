@@ -56,19 +56,21 @@ def get_beats(y, sr, hop_length):
     bpm, beats = librosa.beat.beat_track(onsets=odf, sr=sr, hop_length=hop_length)
     
     if bpm < MIN_TEMPO:
-        print 'Doubling up BPM: ', bpm, len(beats), ' -> ',
         bpm, beats = librosa.beat.beat_track(onsets=odf, sr=sr, hop_length=hop_length, bpm=2*bpm)
-        print bpm, len(beats)
         
     return bpm, beats
 
 def features(filename):
+    print '\t[1/4] loading audio'
     y, sr = librosa.load(filename, sr=SR)
     
+    print '\t[2/4] Separating harmonic and percussive signals'
     y_perc, y_harm = hp_sep(y)
     
+    print '\t[3/4] detecting beats'
     bpm, beats = get_beats(y=y_perc, sr=sr, hop_length=HOP_LENGTH)
     
+    print '\t[4/4] generating CQT'
     M1 = np.abs(librosa.cqt(y=y_harm, 
                             sr=sr, 
                             hop_length=HOP_LENGTH, 
@@ -332,7 +334,8 @@ def do_segmentation(X, beats, parameters):
         k = L_factor.shape[0]
         boundaries = detect_boundaries(L_factor, max(n_types, k))
     
-        print '%s%.4e:\t%2d types:\t%3d segments' % (' ' * np.round(np.abs(np.log10(gap))), gap, n_types, k)
+        if parameters['verbose']:
+            print '%s%.4e:\t%2d types:\t%3d segments' % (' ' * np.round(np.abs(np.log10(gap))), gap, n_types, k)
         
         if (gap > best_gap) and (k_min <= k):
             best_n_types   = n_types
@@ -349,6 +352,12 @@ def do_segmentation(X, beats, parameters):
 
 def process_arguments():
     parser = argparse.ArgumentParser(description='Music segmentation')
+
+    parser.add_argument(    '-v', '--verbose',
+                            dest    =   'verbose',
+                            action  =   'store_true',
+                            default =   False,
+                            help    =   'verbose output')
 
     parser.add_argument(    'input_song',
                             action  =   'store',
