@@ -25,7 +25,7 @@ import sklearn.cluster
 import librosa
 
 # Suppress neighbor links within REP_WIDTH beats of the current one
-REP_WIDTH=3
+REP_WIDTH=0
 
 # Only consider repetitions of at least (FILTER_WIDTH-1)/2
 FILTER_WIDTH=13
@@ -90,7 +90,7 @@ def features(filename):
                             n_bins=96))
     
     
-    M1 = librosa.logamplitude(M1**2.0, ref_power=np.max)
+    M1 = librosa.logamplitude(M1**2.0, ref_power=np.max, top_db=60.0)
 
     n = M1.shape[1]
     
