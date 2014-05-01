@@ -30,17 +30,11 @@ HOP_LENGTH=512
 SR=22050
 MAX_REP=12
 
-GAP_THRESHOLD = 1e-7
-EDGE_THRESHOLD = 1e-12
-
 MIN_SEG=10.0
 MAX_SEG=45.0
 
 MIN_TEMPO=70.0
 MIN_NON_REPEATING = 4
-MAX_FILTER_WIDTH  = 5
-
-DISTANCE_QUANTILE = 0.5
 
 SEGMENT_NAMES = list(string.ascii_uppercase)
 for x in string.ascii_uppercase:
@@ -181,94 +175,6 @@ def factorize(L, k=20):
     e_vecs = e_vecs[:, idx]
     
     return e_vecs[:, :k].T, e_vals[k] - e_vals[k-1]
-
-def boundary_estimate_bandwidth(D):
-    n = len(D)
-    
-    D = np.sort(D, axis=1)
-    
-    # Sigma[i] is some quantile distance from the ith point
-    sigma = D[:, min(n-1, 1 + int(DISTANCE_QUANTILE * (n-1)))]**0.5
-    
-    return np.multiply.outer(sigma, sigma)
-
-def graph_autogain(V, tau):
-    '''Given a vector of scaled distances (V=D/sigma(i,j)) and a threshold, compute the scale factor `A` such that
-    min_i exp(-A V[i]) <= tau
-    
-    =>
-    
-    A >= -log(tau)/V
-    
-    A <- min_i -log(tau) / V[i] = log(1/tau) / max(V)
-    '''
-    
-    return -np.log(tau) / np.max(V)
-
-def non_maximal(dists):
-    '''Send distances to zero if they're not the maximum within some range'''
-    
-    max_dists = scipy.ndimage.maximum_filter1d(dists, MAX_FILTER_WIDTH)
-    
-    return dists * (dists >= max_dists)
-
-def make_boundary_graph(X):
-    
-    n = X.shape[1]
-    
-    D = scipy.spatial.distance.cdist(X.T, X.T, metric='sqeuclidean')
-    
-    sigma = boundary_estimate_bandwidth(D)
-    
-    # Estimate the bandwidth based on how many links you expect to cut
-    # Scale by so that the max distance gets pushed to below some maximum value
-    dists = np.diag(D / sigma, k=1)
-
-    alpha = graph_autogain(dists, EDGE_THRESHOLD)
-
-    dists = non_maximal(dists)
-    A = np.eye(n)
-    A[range(n-1), range(1, n)] = np.exp(-alpha * dists)
-
-    return np.maximum(A, A.T)
-
-
-def factor_and_gap(L, k_max=None):
-    e_vals, e_vecs = scipy.linalg.eig(L)
-    e_vals = e_vals.real
-    idx = np.argsort(e_vals)
-    
-    e_vals = e_vals[idx]
-    e_vecs = e_vecs[:, idx]
-    
-    # Normalize the spectrum for comparison across graphs
-    e_vals = e_vals / e_vals.sum()
-    
-    # Truncate to at most k_max segments
-    if k_max is not None:
-        e_vals = e_vals[:k_max]
-        e_vecs = e_vecs[:, :k_max]
-    else:
-        k_max = len(e_vals)
-        
-    # Threshold the spectrum and find the first jump
-    # Find the first jump above the threshold
-    # gap[i] = e_vals[i+1] - e_vals[i]
-    gap = np.diff(e_vals * (e_vals > GAP_THRESHOLD))
-    
-    k = k_max - 1
-    if gap.any():
-        k = min(k, 1 + np.flatnonzero(gap)[0])
-    
-    return e_vecs[:, :k].T, e_vals[k] - e_vals[k-1]
-
-def detect_boundaries(Lbf, k):
-    C = sklearn.cluster.KMeans(n_clusters=k, tol=1e-10, n_init=50)
-    labels = C.fit_predict(Lbf.T)
-        
-    boundaries = 1 + np.asarray(np.where(labels[:-1] != labels[1:])).reshape((-1,))
-    
-    return np.unique(np.concatenate([[0], boundaries, [len(labels)]]))
 
 def label_rep_sections(X, boundaries, n_types):
     # Classify each segment centroid
