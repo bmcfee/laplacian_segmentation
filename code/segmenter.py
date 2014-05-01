@@ -232,7 +232,7 @@ def do_segmentation(X, beats, parameters):
 
     # Get the raw recurrence plot
     R = librosa.segment.recurrence_matrix(librosa.segment.stack_memory(X), 
-                                            k=2 * int(np.ceil(np.sqrt(X.shape[1]))), 
+                                            k=int(np.ceil(np.sqrt(X.shape[1]))), 
                                             width=REP_WIDTH, 
                                             metric='sqeuclidean',
                                             sym=True).astype(np.float32)
