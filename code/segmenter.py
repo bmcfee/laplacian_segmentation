@@ -233,7 +233,7 @@ def do_segmentation(X, beats, parameters):
     R = librosa.segment.recurrence_matrix(librosa.segment.stack_memory(X), 
                                             k=2*int(np.ceil(np.sqrt(X.shape[1]))), 
                                             width=REP_WIDTH, 
-                                            metric='sqeuclidean',
+                                            metric='seuclidean',
                                             sym=True).astype(np.float32)
 
     S = librosa.segment.structure_feature(R)
