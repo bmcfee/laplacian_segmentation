@@ -28,7 +28,7 @@ import librosa
 REP_WIDTH=3
 
 # Only consider repetitions of at least (FILTER_WIDTH-1)/2
-FILTER_WIDTH=7
+FILTER_WIDTH=17
 
 # Sample rate for signal analysis
 SR=22050
@@ -40,7 +40,7 @@ HOP_LENGTH=512
 MAX_REP=12
 
 # Minimum and maximum average segment duration
-MIN_SEG=10.0
+MIN_SEG=6.0
 MAX_SEG=45.0
 
 # Minimum tempo threshold; if we dip below this, double the bpm estimator and resample
@@ -48,7 +48,6 @@ MIN_TEMPO=70.0
 
 # Minimum duration (in beats) of a "non-repeat" section
 MIN_NON_REPEATING = 4
-
 
 
 SEGMENT_NAMES = list(string.ascii_uppercase)
@@ -232,7 +231,7 @@ def do_segmentation(X, beats, parameters):
 
     # Get the raw recurrence plot
     R = librosa.segment.recurrence_matrix(librosa.segment.stack_memory(X), 
-                                            k=int(np.ceil(np.sqrt(X.shape[1]))), 
+                                            k=2*int(np.ceil(np.sqrt(X.shape[1]))), 
                                             width=REP_WIDTH, 
                                             metric='sqeuclidean',
                                             sym=True).astype(np.float32)
