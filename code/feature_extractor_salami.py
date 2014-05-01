@@ -31,7 +31,7 @@ def align_segmentation(filename, beat_times):
             list of segment labels
     '''
     
-    segment_intervals, segment_labels = mir_eval.io.load_jams_range(filename, 'sections', context='function')
+    segment_intervals, segment_labels = mir_eval.io.load_intervals(filename)
 
     # Map beats to intervals
     beat_intervals    = np.asarray(zip(beat_times[:-1], beat_times[1:]))
@@ -66,7 +66,7 @@ def align_segmentation(filename, beat_times):
 
 def get_annotation(song, rootpath):
     song_num = os.path.splitext(os.path.split(song)[-1])[0]
-    return '%s/full_annotations/%s.jams' % (rootpath, song_num)
+    return '%s/full_annotations/%s.lab' % (rootpath, song_num)
 
 # <codecell>
 
@@ -76,6 +76,10 @@ def import_data(song, rootpath, output_path):
         if os.path.exists(data_file):
             with open(data_file, 'r') as f:
                 Data = pickle.load(f)
+                Y, T, L  = align_segmentation(get_annotation(song, rootpath), Data['beats'])
+                Data['segment_times']   = T
+                Data['segment_labels']  = L
+                Data['segments']        = Y
                 print song, 'cached!'
         else:
             try:
@@ -120,6 +124,7 @@ def make_dataset(n=None, n_jobs=16, rootpath='SALAMI/', output_path='data/'):
         if d is None:
             continue
         if len(d['segments']) <= 1:
+            print d['filename'], ' has %d segments' % len(d['segments'])
             continue
         X.append(d['features'])
         Y.append(d['segments'])
