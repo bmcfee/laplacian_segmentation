@@ -280,6 +280,29 @@ def label_rep_sections(X, boundaries, n_types):
     
     return zip(boundaries[:-1], boundaries[1:]), labels
 
+def label_clusterer(Lf, k_min, k_max):
+    best_boundaries = None
+    best_n_types    = None
+
+    for n_types in range(2, MAX_REP+1):
+        # Try to label the data with n_types 
+        C = sklearn.cluster.KMeans(n_clusters=n_types, tol=1e-8)
+        labels = C.fit_predict(Lf[:n_types].T)
+        
+        # Find the label change-points
+        boundaries = 1 + np.asarray(np.where(labels[:-1] != labels[1:])).reshape((-1,))
+        boundaries = np.unique(np.concatenate([[0], boundaries, [len(labels)]]))
+        
+        if best_boundaries is None or (k_min < len(boundaries) and len(boundaries) <= k_max):
+            best_boundaries = boundaries
+            best_n_types    = n_types
+        elif len(boundaries) > k_max:
+            break
+    
+    intervals, labels = label_rep_sections(Lf[:best_n_types], best_boundaries, best_n_types)
+    
+    return best_boundaries, labels
+
 def do_segmentation(X, beats, parameters):
 
 
@@ -317,38 +340,11 @@ def do_segmentation(X, beats, parameters):
     # Get the bottom k eigenvectors of L
     Lf = factorize(L, k=1+MAX_REP)[0]
 
-
-    best_gap        = -np.inf
-    best_boundaries = None
-    best_n_types    = None
-
-    for n_types in range(2, MAX_REP+1):
-        # Build the affinity matrix on the first n_types-1 repetition features
-        A = make_boundary_graph(Lf[:n_types])
-    
-        # Compute its laplacian and factorization
-        L_boundary = rw_laplacian(A)
-    
-        L_factor, gap = factor_and_gap(L_boundary, k_max)
-    
-        k = L_factor.shape[0]
-        boundaries = detect_boundaries(L_factor, max(n_types, k))
-    
-        if parameters['verbose']:
-            print '%s%.4e:\t%2d types:\t%3d segments' % (' ' * np.round(np.abs(np.log10(gap))), gap, n_types, k)
-        
-        if (gap > best_gap) and (k_min <= k):
-            best_n_types   = n_types
-            best_gap       = gap
-        
-            # Do boundary detection by clustering on L_factor
-            best_boundaries = boundaries
-
-    intervals, labels = label_rep_sections(Lf[:best_n_types], best_boundaries, best_n_types)
+    boundaries, labels = label_clusterer(Lf, k_min, k_max)
 
     # Output lab file
     print '\tsaving output to ', parameters['output_file']
-    save_segments(parameters['output_file'], best_boundaries, beats, labels)
+    save_segments(parameters['output_file'], boundaries, beats, labels)
 
 def process_arguments():
     parser = argparse.ArgumentParser(description='Music segmentation')
