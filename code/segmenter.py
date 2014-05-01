@@ -24,17 +24,32 @@ import sklearn.cluster
 # Requires librosa-develop 0.3 branch
 import librosa
 
+# Suppress neighbor links within REP_WIDTH beats of the current one
 REP_WIDTH=3
-FILTER_WIDTH=13
-HOP_LENGTH=512
+
+# Only consider repetitions of at least (FILTER_WIDTH-1)/2
+FILTER_WIDTH=7
+
+# Sample rate for signal analysis
 SR=22050
+
+# Hop length for signal analysis
+HOP_LENGTH=512
+
+# Maximum number of structural components to consider
 MAX_REP=12
 
+# Minimum and maximum average segment duration
 MIN_SEG=10.0
 MAX_SEG=45.0
 
+# Minimum tempo threshold; if we dip below this, double the bpm estimator and resample
 MIN_TEMPO=70.0
+
+# Minimum duration (in beats) of a "non-repeat" section
 MIN_NON_REPEATING = 4
+
+
 
 SEGMENT_NAMES = list(string.ascii_uppercase)
 for x in string.ascii_uppercase:
