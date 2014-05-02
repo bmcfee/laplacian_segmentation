@@ -235,7 +235,7 @@ def self_similarity(X, k):
     D_sort = np.sort(D, axis=1)[1:]
 
     #sigma = np.median(D_sort[:, k])
-    sigma = np.mean(D_sort[:, k])
+    sigma = np.mean(D_sort[:, k]**0.5)**2.0
     A = np.exp(-0.5 * (D / sigma))
     return A
 
