@@ -25,7 +25,7 @@ import sklearn.cluster
 import librosa
 
 # Suppress neighbor links within REP_WIDTH beats of the current one
-REP_WIDTH=0
+REP_WIDTH=1
 
 # Only consider repetitions of at least (FILTER_WIDTH-1)/2
 FILTER_WIDTH=15
@@ -46,7 +46,7 @@ HOP_LENGTH=512
 MAX_REP=12
 
 # Minimum and maximum average segment duration
-MIN_SEG=15.0
+MIN_SEG=10.0
 MAX_SEG=30.0
 
 # Minimum tempo threshold; if we dip below this, double the bpm estimator and resample
