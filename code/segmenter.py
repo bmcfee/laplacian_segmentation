@@ -232,9 +232,8 @@ def label_clusterer(Lf, k_min, k_max):
 
 def estimate_bandwidth(D, k):
     n = len(D)
-    D_sort = np.sort(D, axis=1)[1:]
+    D_sort = np.sort(D, axis=1)
 
-#     sigma = np.median(D_sort[:, k])
     sigma = D_sort[:, int(DISTANCE_QUANTILE * (n-1))]**0.5
     
     return np.multiply.outer(sigma, sigma)
