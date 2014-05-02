@@ -228,9 +228,11 @@ def label_clusterer(Lf, k_min, k_max):
     
     return best_boundaries, labels
 
-def self_similarity(X):
+def self_similarity(X, k):
     D = scipy.spatial.distance.cdist(X.T, X.T, metric=METRIC)
-    sigma = np.median(D)
+    D_sort = np.sort(D, axis=1)[1:]
+
+    sigma = np.median(D_sort[:, k])
     A = np.exp(-0.5 * (D / sigma))
     return A
 
@@ -243,12 +245,13 @@ def do_segmentation(X, beats, parameters):
     # Get the raw recurrence plot
     Xs = librosa.segment.stack_memory(X, n_steps=N_STEPS)
 
+    k_link = 1 + int(np.ceil(np.log2(X.shape[1])))
     R = librosa.segment.recurrence_matrix(  Xs, 
-                                            k=1 + int(np.ceil(np.log2(X.shape[1]))), 
+                                            k=k_link, 
                                             width=REP_WIDTH, 
                                             metric=METRIC,
                                             sym=True).astype(np.float32)
-    A = self_similarity(Xs)
+    A = self_similarity(Xs, k=k_link)
 
     # Mask the self-similarity matrix by recurrence
     S = librosa.segment.structure_feature(R * A)
@@ -268,9 +271,6 @@ def do_segmentation(X, beats, parameters):
     # Call it the infinite jukebox matrix
     M = np.maximum(Rf, (np.eye(Rf.shape[0], k=1) + np.eye(Rf.shape[0], k=-1)))
     
-    # Suppress self-loops, in case we got any
-    M[np.diag_indices_from(M)] = 0
-
     # Get the random walk graph laplacian
     L = rw_laplacian(M)
 
