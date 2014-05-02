@@ -253,7 +253,7 @@ def do_segmentation(X, beats, parameters):
     # Normalize: equivalent to cosine-similarity
 #     Xs = librosa.util.normalize(Xs, norm=2)
 
-    k_link = 1 + int(np.ceil(np.log2(X.shape[1])))
+    k_link = 1 + 2 * int(np.ceil(np.log2(X.shape[1])))
     R = librosa.segment.recurrence_matrix(  Xs, 
                                             k=k_link, 
                                             width=REP_WIDTH, 
