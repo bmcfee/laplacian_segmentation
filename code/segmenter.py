@@ -31,7 +31,7 @@ REP_WIDTH=0
 FILTER_WIDTH=13
 
 # How much state to use?
-N_STEPS = 2
+N_STEPS = 3
 
 # Which similarity metric to use?
 METRIC='sqeuclidean'
@@ -251,7 +251,7 @@ def do_segmentation(X, beats, parameters):
                                             width=REP_WIDTH, 
                                             metric=METRIC,
                                             sym=True).astype(np.float32)
-    A = self_similarity(Xs, k=k_link)
+    A = self_similarity(X, k=k_link)
 
     # Mask the self-similarity matrix by recurrence
     S = librosa.segment.structure_feature(R)
