@@ -254,7 +254,7 @@ def do_segmentation(X, beats, parameters):
     A = self_similarity(Xs, k=k_link)
 
     # Mask the self-similarity matrix by recurrence
-    S = librosa.segment.structure_feature(R * A)
+    S = librosa.segment.structure_feature(R)
 
     Sf = clean_reps(S)
 
@@ -272,7 +272,7 @@ def do_segmentation(X, beats, parameters):
     M = np.maximum(Rf, (np.eye(Rf.shape[0], k=1) + np.eye(Rf.shape[0], k=-1)))
     
     # Get the random walk graph laplacian
-    L = rw_laplacian(M)
+    L = rw_laplacian(M * A)
 
     # Get the bottom k eigenvectors of L
     Lf = factorize(L, k=1+MAX_REP)[0]
