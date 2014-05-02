@@ -85,7 +85,7 @@ R_{ij}(X) \defeq \begin{cases}
 0 & \text{otherwise},
 \end{cases}
 \end{equation}
-where $k$ is a linkage parameter controlling the degree of connectivity in $R$.
+and $k$ is a linkage parameter controlling the degree of connectivity in $R$.
 
 % FIXME: cite for recurrence matrix
 
@@ -95,7 +95,7 @@ In practice, it is beneficial to apply a smoothing filter to $R$ to suppress err
 links, and fill in gaps.  Here, we apply a windowed majority vote to each diagonal of
 $R$, resulting in the filtered matrix $R'$:
 \begin{equation}
-R'_{ij} \defeq \maj\left\{ R_{i-w, j-w}, \dots, R_{i+w, j+w}\right\},
+R'_{ij} \defeq \maj\left\{ R_{i+t, j+t} \given t \in -w, -w+1, \dots, w\right\},
 \label{filtered-rep}
 \end{equation}
 where $w$ is a discrete parameter that defines the minimum length of a valid
@@ -131,6 +131,7 @@ ideally contain edges $\{i, i+1\}$, $\{i, j\}$, $\{i+1, j+1\}$, $\{j, j+1\}$.
 Connections between unrelated blocks are likely to remain sparse, owing primarily to
 cross-section links along the first diagonals.  
 
+% $R^+$ encodes the coarse similarity structure
 % For the purposes of musical structure analysis, we would like to produce a block
 % matrix $C$, where $C_{i,j}$ indicates that $i$ and $j$ belong to the same structural
 % component (\eg, $i$ and $j$ are both of type \emph{verse}).
