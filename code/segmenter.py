@@ -219,7 +219,7 @@ def label_clusterer(Lf, k_min, k_max):
         boundaries = 1 + np.asarray(np.where(labels[:-1] != labels[1:])).reshape((-1,))
         boundaries = np.unique(np.concatenate([[0], boundaries, [len(labels)]]))
         
-        if best_boundaries is None or (k_min < len(boundaries) and len(boundaries) <= k_max):
+        if best_boundaries is None or (k_min < len(boundaries) and len(boundaries) < k_max):
             best_boundaries = boundaries
             best_n_types    = n_types
     
