@@ -31,7 +31,7 @@ REP_WIDTH=0
 FILTER_WIDTH=15
 
 # How much state to use?
-N_STEPS = 3
+N_STEPS = 2
 
 # Which similarity metric to use?
 METRIC='sqeuclidean'
@@ -246,7 +246,7 @@ def do_segmentation(X, beats, parameters):
     k_min, k_max  = get_num_segs(beats[-1])
 
     # Get the raw recurrence plot
-    Xs = librosa.segment.stack_memory(X, n_steps=N_STEPS, constant_values=[X.min()])
+    Xs = librosa.segment.stack_memory(X, n_steps=N_STEPS)
 
     k_link = 1 + int(np.ceil(np.log2(X.shape[1])))
     R = librosa.segment.recurrence_matrix(  Xs, 
