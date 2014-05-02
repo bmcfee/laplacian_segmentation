@@ -46,8 +46,8 @@ HOP_LENGTH=512
 MAX_REP=12
 
 # Minimum and maximum average segment duration
-MIN_SEG=8.0
-MAX_SEG=32.0
+MIN_SEG=10.0
+MAX_SEG=30.0
 
 # Minimum tempo threshold; if we dip below this, double the bpm estimator and resample
 MIN_TEMPO=70.0
