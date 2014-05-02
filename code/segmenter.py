@@ -231,12 +231,14 @@ def label_clusterer(Lf, k_min, k_max):
     return best_boundaries, labels
 
 def estimate_bandwidth(D, k):
-    n = len(D)
+#     n = len(D)
     D_sort = np.sort(D, axis=1)
 
-    sigma = D_sort[:, int(DISTANCE_QUANTILE * (n-1))]**0.5
+#     sigma = D_sort[:, int(DISTANCE_QUANTILE * (n-1))]**0.5
     
-    return np.multiply.outer(sigma, sigma)
+#     return np.multiply.outer(sigma, sigma)
+    sigma = np.median(D_sort[:, 1+k])
+    return sigma
 
 def self_similarity(X, k):
     D = scipy.spatial.distance.cdist(X.T, X.T, metric=METRIC)
