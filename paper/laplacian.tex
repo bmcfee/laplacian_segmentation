@@ -118,11 +118,11 @@ rest of the song.  Subsequent refinements separate the verses and refrains, and 
 \subsection{Change-point detection}
 
 \begin{algorithm}
-\caption{Spectral change-point detection\label{scp}}
+\caption{Change-point detection\label{cpd}}
 \begin{algorithmic}[1]
-\REQUIRE{Repetition features $Y \in \R^{M \times n}$, $2 < k_\text{min} < k_\text{max}$}
+\REQUIRE{Repetition features $Y \in \R^{M \times n}$, $2 \leq k_\text{min} < k_\text{max}$}
 \ENSURE{Boundaries $B^*$, number of segment labels $m^*$}\\
-{\sc SCPD}$(Y, k_\text{min}, k_\text{max})$
+{\sc CPD}$(Y, k_\text{min}, k_\text{max})$
     \STATE{$B^* \leftarrow \emptyset$}
     \FOR{$m \leftarrow 1, 2, \ldots, M$}
         \STATE{Run spectral $k$-means on $Y^{(m)}$ with $k=m$}
@@ -136,14 +136,29 @@ rest of the song.  Subsequent refinements separate the verses and refrains, and 
 \end{algorithmic}
 \end{algorithm}
 
+\subsection{Structure annotation}
+
 \begin{algorithm}
 \caption{Laplacian structural segmentation\label{lss}}
 \begin{algorithmic}[1]
-\STATE foo
+\REQUIRE{ Features: $X \in \R^{d\times n}$\\
+maximum number of segment types: $M$\\
+bounds on the number of segments: $2 \leq k_\text{min} < k_\text{max}$}
+\ENSURE{Segment boundaries $B$, labels $C$}\\
+{\sc LSS}$(X, k_\text{min}, k_\text{max}$)
+\STATE{$R \leftarrow $ filtered binary recurrence matrix of $X$}
+\STATE{$A \leftarrow R + \diag_{+1}(\one) + \diag_{-1}(\one)$}
+\STATE{$L \leftarrow I - \diag(A\one)^{-1} A$}
+\STATE{$Y \leftarrow$ bottom $M$ eigenvectors of $L$}
+\STATE{$B \leftarrow \text{\sc CPD}(Y, k_\text{min}, k_\text{max})$}
+\COMMENT{\Cref{cpd}}
+\STATE{$S_i \leftarrow$ mean of $Y^{m}$ over $[B_i, B_{i+1})$}
+\STATE{Run $k$-means on $S$ with $k=m$}
+\STATE{Let $C_i$ be the cluster containing the $i$th segment}
+\RETURN{$B, C$}
 \end{algorithmic}
 \end{algorithm}
 
-\subsection{Structure annotation}
 % For each m in 2 .. M:
 % m <- argmax gap
 % compute segment centroids over boundaries[m], and cluster by k-means with k=m
