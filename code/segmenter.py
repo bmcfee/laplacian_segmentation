@@ -267,8 +267,8 @@ def do_segmentation(X, beats, parameters):
     # Symmetrize by force
     Rf = np.maximum(Rf, Rf.T)
 
-    # Expand transitionals
-    Rf = expand_transitionals(Rf, local=False)
+    # Suppress the diagonal
+    Rf[np.diag_indices_from(Rf)] = 0
 
     # We can jump to a random neighbor, or +- 1 step in time
     # Call it the infinite jukebox matrix
