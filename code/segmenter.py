@@ -28,7 +28,7 @@ import librosa
 REP_WIDTH=0
 
 # Only consider repetitions of at least (FILTER_WIDTH-1)/2
-FILTER_WIDTH=13
+FILTER_WIDTH=17
 
 # How much state to use?
 N_STEPS = 3
@@ -234,8 +234,7 @@ def self_similarity(X, k):
     D = scipy.spatial.distance.cdist(X.T, X.T, metric=METRIC)
     D_sort = np.sort(D, axis=1)[1:]
 
-    #sigma = np.median(D_sort[:, k])
-    sigma = np.mean(D_sort[:, k]**0.5)**2.0
+    sigma = np.median(D_sort[:, k])
     A = np.exp(-0.5 * (D / sigma))
     return A
 
