@@ -89,10 +89,10 @@ def features(filename):
                             hop_length=HOP_LENGTH, 
                             bins_per_octave=12, 
                             fmin=librosa.midi_to_hz(24), 
-                            n_bins=72))
+                            n_bins=84))
     
     
-    M1 = librosa.logamplitude(M1**2.0, ref_power=np.max, top_db=60.0)
+    M1 = librosa.logamplitude(M1**2.0, ref_power=np.max)
 
     n = M1.shape[1]
     
