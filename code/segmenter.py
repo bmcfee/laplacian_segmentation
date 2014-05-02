@@ -34,7 +34,7 @@ FILTER_WIDTH=13
 N_STEPS = 3
 
 # Which similarity metric to use?
-METRIC='cosine'
+METRIC='sqeuclidean'
 
 # Sample rate for signal analysis
 SR=22050
@@ -53,7 +53,7 @@ MAX_SEG=30.0
 MIN_TEMPO=70.0
 
 # Minimum duration (in beats) of a "non-repeat" section
-MIN_NON_REPEATING = 4
+MIN_NON_REPEATING = (FILTER_WIDTH - 1) / 2
 
 
 SEGMENT_NAMES = list(string.ascii_uppercase)
@@ -228,21 +228,30 @@ def label_clusterer(Lf, k_min, k_max):
     
     return best_boundaries, labels
 
-def do_segmentation(X, beats, parameters):
+def self_similarity(X):
+    D = scipy.spatial.distance.cdist(X.T, X.T, metric=METRIC)
+    sigma = np.median(D)
+    A = np.exp(-0.5 * (D / sigma))
+    return A
 
+def do_segmentation(X, beats, parameters):
 
     # Find the segment boundaries
     print '\tpredicting segments...'
     k_min, k_max  = get_num_segs(beats[-1])
 
     # Get the raw recurrence plot
-    R = librosa.segment.recurrence_matrix(librosa.segment.stack_memory(X, n_steps=N_STEPS), 
+    Xs = librosa.segment.stack_memory(X, n_steps=N_STEPS)
+
+    R = librosa.segment.recurrence_matrix(  Xs, 
                                             k=1 + int(np.ceil(np.log2(X.shape[1]))), 
                                             width=REP_WIDTH, 
                                             metric=METRIC,
                                             sym=True).astype(np.float32)
+    A = self_similarity(Xs)
 
-    S = librosa.segment.structure_feature(R)
+    # Mask the self-similarity matrix by recurrence
+    S = librosa.segment.structure_feature(R * A)
 
     Sf = clean_reps(S)
 
@@ -258,6 +267,9 @@ def do_segmentation(X, beats, parameters):
     # We can jump to a random neighbor, or +- 1 step in time
     # Call it the infinite jukebox matrix
     M = np.maximum(Rf, (np.eye(Rf.shape[0], k=1) + np.eye(Rf.shape[0], k=-1)))
+    
+    # Suppress self-loops, in case we got any
+    M[np.diag_indices_from(M)] = 0
 
     # Get the random walk graph laplacian
     L = rw_laplacian(M)
