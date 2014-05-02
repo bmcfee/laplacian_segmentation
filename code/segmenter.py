@@ -55,6 +55,8 @@ MIN_TEMPO=70.0
 # Minimum duration (in beats) of a "non-repeat" section
 MIN_NON_REPEATING = (FILTER_WIDTH - 1) / 2
 
+# Quantile for bandwidth estimation
+DISTANCE_QUANTILE = 0.5
 
 SEGMENT_NAMES = list(string.ascii_uppercase)
 for x in string.ascii_uppercase:
@@ -228,11 +230,22 @@ def label_clusterer(Lf, k_min, k_max):
     
     return best_boundaries, labels
 
+def estimate_bandwidth(D):
+    n = len(D)
+    
+    D = np.sort(D, axis=1)
+    
+    # Sigma[i] is some quantile distance from the ith point
+    sigma = D[:, min(n-1, 1 + int(DISTANCE_QUANTILE * n))]**0.5
+    
+    return np.multiply.outer(sigma, sigma)
+
 def self_similarity(X, k):
     D = scipy.spatial.distance.cdist(X.T, X.T, metric=METRIC)
-    D_sort = np.sort(D, axis=1)[1:]
+#     D_sort = np.sort(D, axis=1)[1:]
 
-    sigma = np.median(D_sort[:, k])
+#     sigma = np.median(D_sort[:, k])
+    sigma = estimate_bandwidth(D)
     A = np.exp(-0.5 * (D / sigma))
     return A
 
