@@ -30,6 +30,9 @@ REP_WIDTH=0
 # Only consider repetitions of at least (FILTER_WIDTH-1)/2
 FILTER_WIDTH=13
 
+# How much state to use?
+N_STEPS = 3
+
 # Which similarity metric to use?
 METRIC='cosine'
 
@@ -233,7 +236,7 @@ def do_segmentation(X, beats, parameters):
     k_min, k_max  = get_num_segs(beats[-1])
 
     # Get the raw recurrence plot
-    R = librosa.segment.recurrence_matrix(librosa.segment.stack_memory(X), 
+    R = librosa.segment.recurrence_matrix(librosa.segment.stack_memory(X, n_steps=N_STEPS), 
                                             k=1 + int(np.ceil(np.log2(X.shape[1]))), 
                                             width=REP_WIDTH, 
                                             metric=METRIC,
