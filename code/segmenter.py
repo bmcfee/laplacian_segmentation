@@ -55,9 +55,6 @@ MIN_TEMPO=70.0
 # Minimum duration (in beats) of a "non-repeat" section
 MIN_NON_REPEATING = (FILTER_WIDTH - 1) / 2
 
-# Quantile for bandwidth estimation
-DISTANCE_QUANTILE = 0.25
-
 SEGMENT_NAMES = list(string.ascii_uppercase)
 for x in string.ascii_uppercase:
     SEGMENT_NAMES.extend(['%s%s' % (x, y) for y in string.ascii_lowercase])
@@ -92,7 +89,7 @@ def features(filename):
                             hop_length=HOP_LENGTH, 
                             bins_per_octave=12, 
                             fmin=librosa.midi_to_hz(24), 
-                            n_bins=96))
+                            n_bins=72))
     
     
     M1 = librosa.logamplitude(M1**2.0, ref_power=np.max, top_db=60.0)

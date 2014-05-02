@@ -98,15 +98,16 @@ to equivalent position within a repeated sequence. Note, however, that successiv
 positions $(i, i+1)$ will not in general be connected in $R'$, so the constituent 
 samples of a particular sequence will not be directly linked.
 
-In order to facilitate the discovery of repeated sections, we form a matrix $A$ by 
-augmenting $R'$ with links $(i, i+1)$ and $(i, i-1)$:
+In order to facilitate the discovery of repeated sections, we modify $R'$ by 
+adding links between adjacent samples $(i, i+1)$ and $(i, i-1)$, resulting in the
+\emph{sequence-augmented graph} $R^+$:
 \begin{equation}
-A_{ij} \defeq \begin{cases}
+R^+_{ij} \defeq \begin{cases}
 1 & |i - j| = 1\\
 R'_{ij} & \text{otherwise}.
 \end{cases}\label{pathmatrix}
 \end{equation}
-With appropriate normalization, $A$ can be interpreted as a Markov process
+With appropriate normalization, $R^+$ can be interpreted as a Markov process
 over samples, where at each step $i$, the process either moves to an adjacent
 sample $i\pm1$, or a random repetition of $i$; a process exemplified by the 
 Infinite Jukebox~\cite{infinitejukebox}.
@@ -116,7 +117,7 @@ recurrence information.  Ideally, we would add connections only to pairs $\{i,j\
 belonging to the same component, but of course, this information is hidden.  Rather,
 by adding links along the first diagonals, the graph becomes fully connected.  
 However, repeated sections will contain internal connectivity structure.  Let $i$ and
-$j$ denote two repetitions of the same sample at different times; then $A$ should
+$j$ denote two repetitions of the same sample at different times; then $R^+$ should
 ideally contain edges $\{i, i+1\}$, $\{i, j\}$, $\{i+1, j+1\}$, $\{j, j+1\}$.
 Connections between unrelated blocks are likely to remain sparse, owing primarily to
 cross-section links along the first diagonals.  
