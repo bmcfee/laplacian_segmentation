@@ -58,13 +58,6 @@ The abstract should be placed at the top left column and should contain about 15
 
 \cite{grohganz2013converting}
 
-\subsection{Preliminaries}
-% Define the graph laplacian, and the random-walk normalized variant
-% define segmentation notation: 
-%   d = input dimension
-%   n = number of frames, 
-%   s = number of segments, 
-%   m = number of segment types
 \section{Encoding repetition}
 % Begin with nearest-neighbor linkage in some feature space
 % Apply diagonal majority vote filtering
@@ -74,15 +67,51 @@ The abstract should be placed at the top left column and should contain about 15
 Let $X = [x_1, x_2, \dots, x_n] \in \R^{d\times n}$ denote a $d$-dimensional time
 series feature matrix, \eg, a chromagram or sequence of Mel-frequency cepstral 
 coefficients).  As a first step toward detecting and representing repetition structure, 
-we form a \emph{binary recurrence matrix} $R_k \in \{0,1\}^{n\times n}$, where $R_{ij}$ 
-indicates that $x_i$ and $x_j$ are mutual $k$-nearest neighbors.
+we form a \emph{binary recurrence matrix} $R \in \{0,1\}^{n\times n}$, where 
+\begin{equation}
+R_{ij}(X) \defeq \begin{cases}
+1 & x_i, x_j \text{ are mutual $k$-nearest neighbors}\\
+0 & \text{otherwise},
+\end{cases}
+\end{equation}
+where $k$ is a linkage parameter controlling the degree of connectivity in $R$.
+
 % FIXME: cite for recurrence matrix
 
 If $X$ sufficiently captures the qualities of interest, and $k$ is large
 enough, then repeated structures should appear as diagonal stripes in $R$.
+In practice, it is beneficial to apply a smoothing filter to $R$ to suppress erroneous
+links, and fill in gaps.  Here, we apply a windowed majority vote to each diagonal of
+$R$, resulting in the filtered matrix $R'$:
+\begin{equation}
+R'_{ij} \defeq \maj\left\{ R_{i-w, j-w}, \dots, R_{i+w, j+w}\right\},
+\label{filtered-rep}
+\end{equation}
+where $w$ is a discrete parameter that defines the minimum length of a valid
+repetition sequence.
+
+The filtered recurrence matrix $R'$ can be interpreted as an unweighted, undirected 
+graph, whose vertices correspond to samples (columns of $X$), and edges correspond 
+to equivalent position within a repeated sequence. Note, however, that successive 
+positions $(i, i+1)$ will not in general be connected in $R'$, so the constituent 
+samples of a particular sequence will not be directly linked.
+
+In order to facilitate the discovery of repeated sections, we form a matrix $A$ by 
+augmenting $R'$ with links $(i, i+1)$ and $(i, i-1)$:
+\begin{equation}
+A_{ij} \defeq \begin{cases}
+1 & |i - j| = 1\\
+R'_{ij} & \text{otherwise}.
+\end{cases}\label{pathmatrix}
+\end{equation}
+With appropriate normalization, $A$ can be interpreted as a Markov process
+over samples, where at each step $i$, the process either moves to an adjacent
+sample $i\pm1$, or a random repetition of $i$.
 
 
-
+% For the purposes of musical structure analysis, we would like to produce a block
+% matrix $C$, where $C_{i,j}$ indicates that $i$ and $j$ belong to the same structural
+% component (\eg, $i$ and $j$ are both of type \emph{verse}).
 
 
 
@@ -99,9 +128,11 @@ enough, then repeated structures should appear as diagonal stripes in $R$.
 \begin{figure}
 \centering
 \includegraphics[width=\columnwidth]{figs/recurrence}
-\caption{Upper-left: the raw recurrence matrix for \emph{The Beatles -- Come Together}; upper-right: the
-recurrence matrix after diagonal filtering; lower-left: a close-up of the first 140 beats; lower-right the first
-10 basis features, ordered bottom-to-top.  The first four rows encode the primary structural components.\label{recurrence}}
+\caption{Upper-left: the recurrence matrix $R$ for \emph{The Beatles -- Come
+Together}; upper-right: the filtered $R'$; lower-left: a close-up of augmented
+recurrence matrix $A$ (first 140 samples); 
+lower-right the first 10 basis features, ordered bottom-to-top.  
+The first four rows encode the primary structural components.\label{recurrence}}
 \end{figure}
 
  
@@ -146,8 +177,8 @@ maximum number of segment types: $M$\\
 bounds on the number of segments: $2 \leq k_\text{min} < k_\text{max}$}
 \ENSURE{Segment boundaries $B$, labels $C$}\\
 {\sc LSS}$(X, k_\text{min}, k_\text{max}$)
-\STATE{$R \leftarrow $ filtered binary recurrence matrix of $X$}
-\STATE{$A \leftarrow R + \diag_{+1}(\one) + \diag_{-1}(\one)$}
+\STATE{$R' \leftarrow $ filtered recurrence matrix of $X$ (\Cref{filtered-rep})}
+\STATE{$A \leftarrow R' + \diag_{+1}(\one) + \diag_{-1}(\one)$}
 \STATE{$L \leftarrow I - \diag(A\one)^{-1} A$}
 \STATE{$Y \leftarrow$ bottom $M$ eigenvectors of $L$}
 \STATE{$B \leftarrow \text{\sc CPD}(Y, k_\text{min}, k_\text{max})$}
