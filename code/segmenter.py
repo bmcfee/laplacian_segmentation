@@ -31,7 +31,7 @@ REP_WIDTH=0
 FILTER_WIDTH=13
 
 # How much state to use?
-N_STEPS = 3
+N_STEPS = 2
 
 # Which similarity metric to use?
 METRIC='sqeuclidean'
