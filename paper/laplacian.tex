@@ -79,7 +79,8 @@ indicates that $x_i$ and $x_j$ are mutual $k$-nearest neighbors.
 % FIXME: cite for recurrence matrix
 
 If $X$ sufficiently captures the qualities of interest, and $k$ is large
-enough, then repeated structures should appear as diagonal stripes in $R$.  
+enough, then repeated structures should appear as diagonal stripes in $R$.
+
 
 
 
@@ -115,17 +116,35 @@ rest of the song.  Subsequent refinements separate the verses and refrains, and 
 \section{Algorithms}
 
 \subsection{Change-point detection}
-% For a fixed number of segment types, how can we do change-point detection?
-% Partition the sequential linkage graph A
-% Use repetition features to define the edge weights
-% Local bandwidth estimation, non-maximal suppresssion
-% 1. Estimate the number of segments k
-% 2. Score the partitioning by the spectral gap $\lambda_k$
 
+\begin{algorithm}
+\caption{Spectral change-point detection\label{scp}}
+\begin{algorithmic}[1]
+\REQUIRE{Repetition features $Y \in \R^{M \times n}$, $2 < k_\text{min} < k_\text{max}$}
+\ENSURE{Boundaries $B^*$, number of segment labels $m^*$}\\
+{\sc SCPD}$(Y, k_\text{min}, k_\text{max})$
+    \STATE{$B^* \leftarrow \emptyset$}
+    \FOR{$m \leftarrow 1, 2, \ldots, M$}
+        \STATE{Run spectral $k$-means on $Y^{(m)}$ with $k=m$}
+        \STATE{Let $c_t$ be the cluster containing sample $t$}
+        \STATE{$B \leftarrow \{t \given c_t \neq c_{t+1}\}$}
+        \IF{$B^* = \emptyset$ or $k_\text{min} \leq |B| + 1 \leq k_\text{max}$} 
+        \STATE{$B^* \leftarrow B, \quad m^* \leftarrow m$}
+        \ENDIF
+    \ENDFOR
+    \RETURN{$B^*, m^*$}
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+\caption{Laplacian structural segmentation\label{lss}}
+\begin{algorithmic}[1]
+\STATE foo
+\end{algorithmic}
+\end{algorithm}
 
 \subsection{Structure annotation}
 % For each m in 2 .. M:
-%   boundaries[m], gap[m] = change_point(Y[:m])
 % m <- argmax gap
 % compute segment centroids over boundaries[m], and cluster by k-means with k=m
 % return boundary times and segment labels
