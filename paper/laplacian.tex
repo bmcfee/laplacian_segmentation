@@ -10,7 +10,7 @@
 
 % Title.
 % ------
-\title{Analyzing song structure with graph Laplacians}
+\title{Analyzing song structure with spectral clustering}
 
 % Single address
 % To use with only one author or several with the same address
@@ -106,19 +106,58 @@ R'_{ij} & \text{otherwise}.
 \end{equation}
 With appropriate normalization, $A$ can be interpreted as a Markov process
 over samples, where at each step $i$, the process either moves to an adjacent
-sample $i\pm1$, or a random repetition of $i$.
+sample $i\pm1$, or a random repetition of $i$; a process exemplified by the 
+Infinite Jukebox~\cite{infinitejukebox}.
 
+\Cref{pathmatrix} explicitly combines local temporal connectivity with long-term
+recurrence information.  Ideally, we would add connections only to pairs $\{i,j\}$
+belonging to the same component, but of course, this information is hidden.  Rather,
+by adding links along the first diagonals, the graph becomes fully connected.  
+However, repeated sections will contain internal connectivity structure.  Let $i$ and
+$j$ denote two repetitions of the same sample at different times; then $A$ should
+ideally contain edges $\{i, i+1\}$, $\{i, j\}$, $\{i+1, j+1\}$, $\{j, j+1\}$.
+Connections between unrelated blocks are likely to remain sparse, owing primarily to
+cross-section links along the first diagonals.  
 
 % For the purposes of musical structure analysis, we would like to produce a block
 % matrix $C$, where $C_{i,j}$ indicates that $i$ and $j$ belong to the same structural
 % component (\eg, $i$ and $j$ are both of type \emph{verse}).
 
+\subsection{Spectral clustering}
 
+The Laplacian is a fundamental tool in the field of spectral graph
+theory, as its spectrum can be used to characterize 
+connectivity among vertices~\cite{chung1997spectral}.  
+Let $A$ denote the adjacency matrix of \cref{pathmatrix}, and define $D$ as the
+diagonal \emph{degree matrix}: $D \defeq \diag(\sum_{j} A_{\cdot, j})$.  The
+\emph{random-walk normalized Laplacian} $L$ is defined as:\footnote{Other forms of
+Laplacian normalization are commonly used in practice.  We selected random-walk
+normalization according to the motivations described by 
+von~Luxburg~\cite{von2007tutorial}.}
+\begin{equation}
+L \defeq D^{-1} (D - A) = I - D^{-1} A.\label{rwlaplacian}
+\end{equation}
 
-\subsection{The graph Laplacian}
+The Laplacian forms the basis of spectral clustering~\cite{von2007tutorial}.  The
+motivation for its use stems from the observation that the multiplicity of the bottom
+eigenvalue $\lambda_0 = 0$ corresponds to the number of connected components in a
+graph, and the corresponding eigenvectors $y_i \in \R^n$ encode membership of vertices
+in components.
 
-\cite{chung1997spectral, von2007tutorial}
+In the non-ideal case --- as we have with $A$ --- the graph is fully connected, and
+the bottom eigenvector $y_0$ is a constant vector which trivially encodes membership 
+in the graph.  However, in the case of $A$, we expect there to be many components
+with relatively small inter-connectivity, \ie, when one section transitions to the
+next.  These weak connections may be revealed by spectral clustering, \ie, analyzing 
+eigenvectors corresponding to small eigenvalues.
 
+An example of this type of analysis is provided in \Cref{recurrence}.  Although the
+bottom eigenvector is uninformative, the remaining bases clearly encode membership in
+the diagonal regions depicted in the top sub-plots.
+
+To apply spectral clustering, we will apply $k$-means clustering to the bottom $M$ 
+eigenvectors $Y \in \R^{M \times n}$ as features, where $M > 0$ is a specified maximum 
+number of structural components.
 
 % Additional eigenvectors encode nested structures
 % Pick a nice example here.  Maybe nirvana or green day?  Beatles would be fine too.
@@ -179,7 +218,7 @@ bounds on the number of segments: $2 \leq k_\text{min} < k_\text{max}$}
 {\sc LSS}$(X, k_\text{min}, k_\text{max}$)
 \STATE{$R' \leftarrow $ filtered recurrence matrix of $X$ (\Cref{filtered-rep})}
 \STATE{$A \leftarrow R' + \diag_{+1}(\one) + \diag_{-1}(\one)$}
-\STATE{$L \leftarrow I - \diag(A\one)^{-1} A$}
+\STATE{$L \leftarrow I - D^{-1} A$}
 \STATE{$Y \leftarrow$ bottom $M$ eigenvectors of $L$}
 \STATE{$B \leftarrow \text{\sc CPD}(Y, k_\text{min}, k_\text{max})$}
 \COMMENT{\Cref{cpd}}
