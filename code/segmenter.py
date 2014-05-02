@@ -246,7 +246,9 @@ def do_segmentation(X, beats, parameters):
     k_min, k_max  = get_num_segs(beats[-1])
 
     # Get the raw recurrence plot
-    Xs = librosa.segment.stack_memory(X, n_steps=N_STEPS)
+    Xpad = np.pad(X, pad_width=((0, 0), (N_STEPS, 0)), mode='edge')
+
+    Xs = librosa.segment.stack_memory(Xpad, n_steps=N_STEPS)[:, N_STEPS:]
 
     # Normalize: equivalent to cosine-similarity
     Xs = librosa.util.normalize(Xs, norm=2)
