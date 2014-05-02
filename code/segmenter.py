@@ -246,10 +246,7 @@ def do_segmentation(X, beats, parameters):
     k_min, k_max  = get_num_segs(beats[-1])
 
     # Get the raw recurrence plot
-    Xs = librosa.segment.stack_memory(X, n_steps=N_STEPS)
-
-    # Normalize: equivalent to cosine-similarity
-#     Xs = librosa.util.normalize(Xs, norm=2)
+    Xs = librosa.segment.stack_memory(X, n_steps=N_STEPS, constant_values=[X.min()])
 
     k_link = 1 + int(np.ceil(np.log2(X.shape[1])))
     R = librosa.segment.recurrence_matrix(  Xs, 
