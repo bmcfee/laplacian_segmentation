@@ -279,7 +279,8 @@ def label_clusterer(Lf, k_min, k_max):
         c2 = cond_entropy(label_dict[n_types-1], labels) / np.log(n_types-1 + 1e-12)
 
         # take the harmonic mean
-        score = mir_eval.util.f_measure(1-c1, 1-c2)
+        # negate: we want to minimize s_f across levels
+        score = - mir_eval.util.f_measure(1-c1, 1-c2)
 
         if score > best_score and len(boundaries) > k_min:
             best_boundaries = boundaries
