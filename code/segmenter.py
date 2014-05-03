@@ -37,7 +37,7 @@ P_LINK = 0.1
 N_STEPS = 2
 
 # Which similarity metric to use?
-METRIC='sqeuclidean'
+METRIC='cosine'
 
 # Sample rate for signal analysis
 SR=22050
@@ -286,7 +286,6 @@ def do_segmentation(X, beats, parameters):
     M = np.maximum(Rf, (np.eye(Rf.shape[0], k=1) + np.eye(Rf.shape[0], k=-1)))
     
     # Get the random walk graph laplacian
-#     L = rw_laplacian(M * A)
     L = sym_laplacian(M)
 
     # Get the bottom k eigenvectors of L
