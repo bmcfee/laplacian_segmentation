@@ -28,7 +28,7 @@ import librosa
 REP_WIDTH=0
 
 # Only consider repetitions of at least (FILTER_WIDTH-1)/2
-FILTER_WIDTH=15
+FILTER_WIDTH=17
 
 # How much state to use?
 N_STEPS = 3
