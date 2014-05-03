@@ -239,17 +239,26 @@ def self_similarity(X, k):
     A = np.exp(-0.5 * (D / sigma))
     return A
 
-def path_augment(A, tau=None):
+def path_augment(A):
     
     n = len(A)
-    if tau is None:
-        tau = np.exp(-0.5)
-        
-    Z = np.eye(n)
-    Z = Z + np.diag(np.ones(n-1),k=1) + np.diag(np.ones(n-1),k=-1)
     
-    return np.maximum(tau * Z, A)
-
+    A_out = A.copy()
+    
+    # Zero out the +- diagonals
+    A_out[range(n-1), range(1,n)] = 0
+    A_out[range(1, n), range(n-1)] = 0
+    
+    # Compute degrees
+    D = np.sum(A_out, axis=1)
+    
+    Davg = np.minimum(D[:n-1], D[1:])
+    Davg[Davg == 0] = 1.0
+    A_out[range(n-1), range(1,n)] = Davg 
+    A_out[range(1, n), range(n-1)] = Davg
+    
+    return A_out
+    
 def do_segmentation(X, beats, parameters):
 
     # Find the segment boundaries
