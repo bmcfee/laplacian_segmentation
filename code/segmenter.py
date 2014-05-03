@@ -240,7 +240,7 @@ def label_clusterer(Lf, k_min, k_max):
 def estimate_bandwidth(D, k):
     D_sort = np.sort(D, axis=1)
 
-    sigma = np.median(D_sort[:, 1+k])
+    sigma = np.mean(D_sort[:, 1+k])
     return sigma
 
 def self_similarity(X, k):
@@ -283,10 +283,10 @@ def do_segmentation(X, beats, parameters):
 
     # We can jump to a random neighbor, or +- 1 step in time
     # Call it the infinite jukebox matrix
-    M = np.maximum(Rf * A, (np.eye(Rf.shape[0], k=1) + np.eye(Rf.shape[0], k=-1)))
+    M = np.maximum(Rf, (np.eye(Rf.shape[0], k=1) + np.eye(Rf.shape[0], k=-1)))
     
     # Get the random walk graph laplacian
-    L = sym_laplacian(M)
+    L = sym_laplacian(M * A)
 
     # Get the bottom k eigenvectors of L
     Lf = factorize(L, k=1+MAX_REP)[0]
