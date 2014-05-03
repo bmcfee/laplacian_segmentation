@@ -30,11 +30,14 @@ REP_WIDTH=0
 # Only consider repetitions of at least (FILTER_WIDTH-1)/2
 FILTER_WIDTH=17
 
+# Fraction of neighbors to link up with?
+P_LINK = 0.1
+
 # How much state to use?
 N_STEPS = 3
 
 # Which similarity metric to use?
-METRIC='sqeuclidean'
+METRIC='cityblock'
 
 # Sample rate for signal analysis
 SR=22050
@@ -43,7 +46,7 @@ SR=22050
 HOP_LENGTH=512
 
 # Maximum number of structural components to consider
-MAX_REP=8
+MAX_REP=10
 
 # Minimum and maximum average segment duration
 MIN_SEG=10.0
@@ -249,13 +252,14 @@ def do_segmentation(X, beats, parameters):
     Xpad = np.pad(X, [(0,0), (N_STEPS, 0)], mode='edge')
     Xs = librosa.segment.stack_memory(Xpad, n_steps=N_STEPS)[:, N_STEPS:]
 
-    k_link = 1 + int(np.ceil(np.log2(X.shape[1])))
+#     k_link = 1 + int(np.ceil(np.log2(X.shape[1])))
+    k_link = 1 + int(np.ceil(P_LINK * X.shape[1]))
     R = librosa.segment.recurrence_matrix(  Xs, 
                                             k=k_link, 
                                             width=REP_WIDTH, 
                                             metric=METRIC,
                                             sym=True).astype(np.float32)
-    A = self_similarity(X, k=k_link)
+#     A = self_similarity(X, k=k_link)
 
     # Mask the self-similarity matrix by recurrence
     S = librosa.segment.structure_feature(R)
@@ -276,7 +280,8 @@ def do_segmentation(X, beats, parameters):
     M = np.maximum(Rf, (np.eye(Rf.shape[0], k=1) + np.eye(Rf.shape[0], k=-1)))
     
     # Get the random walk graph laplacian
-    L = rw_laplacian(M * A)
+#     L = rw_laplacian(M * A)
+    L = rw_laplacian(M)
 
     # Get the bottom k eigenvectors of L
     Lf = factorize(L, k=1+MAX_REP)[0]
