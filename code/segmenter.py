@@ -24,6 +24,9 @@ import sklearn.cluster
 # Requires librosa-develop 0.3 branch
 import librosa
 
+# Requires mir_eval for f-measure calculation
+import mir_eval
+
 # Suppress neighbor links within REP_WIDTH beats of the current one
 REP_WIDTH=0
 
@@ -32,10 +35,10 @@ FILTER_WIDTH=1 + 2 * 8
 
 # How much mass should we put along the +- diagonals?  We don't want this to influence nodes with high degree
 # If we set the kernel weights appropriately, most edges should have weight >= exp(-0.5)
-RIDGE_FLOW = np.exp(-1)
+RIDGE_FLOW = np.exp(-2)
 
 # How much state to use?
-N_STEPS = 1
+N_STEPS = 2
 
 # Which similarity metric to use?
 METRIC='sqeuclidean'
@@ -269,8 +272,14 @@ def label_clusterer(Lf, k_min, k_max):
         boundaries = 1 + np.asarray(np.where(labels[:-1] != labels[1:])).reshape((-1,))
         boundaries = np.unique(np.concatenate([[0], boundaries, [len(labels)]]))
         
-        # Compute the conditional entropy score: can we predict this labeling from the previous one?
-        score = cond_entropy(labels, label_dict[n_types-1]) / np.log2(n_types)
+        # Compute the conditional entropy scores: 
+        #   can we predict this labeling from the previous one?
+        c1 = cond_entropy(labels, label_dict[n_types-1]) / np.log(n_types + 1e-12)
+        #   or vice versa?
+        c2 = cond_entropy(label_dict[n_types-1], labels) / np.log(n_types-1 + 1e-12)
+
+        # take the harmonic mean
+        score = mir_eval.util.f_measure(c1, c2)
 
         if score > best_score and len(boundaries) > k_min:
             best_boundaries = boundaries
