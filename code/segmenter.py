@@ -50,8 +50,8 @@ HOP_LENGTH=512
 MAX_REP=10
 
 # Minimum and maximum average segment duration
-MIN_SEG=8.0
-MAX_SEG=45.0
+MIN_SEG=10.0
+MAX_SEG=30.0
 
 # Minimum tempo threshold; if we dip below this, double the bpm estimator and resample
 MIN_TEMPO=70.0
@@ -277,7 +277,13 @@ def label_clusterer(Lf, k_min, k_max):
             best_n_types    = n_types
             best_score      = score
 
-    
+    # Did we fail to find anything with enough boundaries?
+    # Take the last one then
+    if best_boundaries is None:
+        best_boundaries = boundaries
+        best_n_types    = n_types
+
+
     intervals, labels = label_rep_sections(Lf[:best_n_types], best_boundaries, best_n_types)
     
     return best_boundaries, labels
