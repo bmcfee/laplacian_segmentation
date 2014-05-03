@@ -265,7 +265,7 @@ def do_segmentation(X, beats, parameters):
                                             width=REP_WIDTH, 
                                             metric=METRIC,
                                             sym=True).astype(np.float32)
-#     A = self_similarity(X, k=k_link)
+    A = self_similarity(X, k=k_link)
 
     # Mask the self-similarity matrix by recurrence
     S = librosa.segment.structure_feature(R)
@@ -283,7 +283,7 @@ def do_segmentation(X, beats, parameters):
 
     # We can jump to a random neighbor, or +- 1 step in time
     # Call it the infinite jukebox matrix
-    M = np.maximum(Rf, (np.eye(Rf.shape[0], k=1) + np.eye(Rf.shape[0], k=-1)))
+    M = np.maximum(Rf * A, (np.eye(Rf.shape[0], k=1) + np.eye(Rf.shape[0], k=-1)))
     
     # Get the random walk graph laplacian
     L = sym_laplacian(M)
