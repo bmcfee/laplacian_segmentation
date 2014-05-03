@@ -28,16 +28,16 @@ import librosa
 REP_WIDTH=0
 
 # Only consider repetitions of at least (FILTER_WIDTH-1)/2
-FILTER_WIDTH=17
+FILTER_WIDTH=13
 
 # Fraction of neighbors to link up with?
 P_LINK = 0.1
 
 # How much state to use?
-N_STEPS = 3
+N_STEPS = 2
 
 # Which similarity metric to use?
-METRIC='cityblock'
+METRIC='sqeuclidean'
 
 # Sample rate for signal analysis
 SR=22050
