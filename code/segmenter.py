@@ -25,13 +25,13 @@ import sklearn.cluster
 import librosa
 
 # Suppress neighbor links within REP_WIDTH beats of the current one
-REP_WIDTH=7
+REP_WIDTH=0
 
 # Only consider repetitions of at least (FILTER_WIDTH-1)/2
 FILTER_WIDTH=15
 
 # How much state to use?
-N_STEPS = 2
+N_STEPS = 3
 
 # Which similarity metric to use?
 METRIC='sqeuclidean'
@@ -266,9 +266,6 @@ def do_segmentation(X, beats, parameters):
 
     # Symmetrize by force
     Rf = np.maximum(Rf, Rf.T)
-
-    # Expand non-repeating transitional sections
-    Rf = expand_transitionals(Rf, local=False)
 
     # Suppress the diagonal
     Rf[np.diag_indices_from(Rf)] = 0
