@@ -239,6 +239,17 @@ def self_similarity(X, k):
     A = np.exp(-0.5 * (D / sigma))
     return A
 
+def path_augment(A, tau=None):
+    
+    n = len(A)
+    if tau is None:
+        tau = np.exp(-0.5)
+        
+    Z = np.eye(n)
+    Z = Z + np.diag(np.ones(n-1),k=1) + np.diag(np.ones(n-1),k=-1)
+    
+    return np.maximum(tau * Z, A)
+
 def do_segmentation(X, beats, parameters):
 
     # Find the segment boundaries
@@ -275,7 +286,7 @@ def do_segmentation(X, beats, parameters):
     M = np.maximum(Rf, (np.eye(Rf.shape[0], k=1) + np.eye(Rf.shape[0], k=-1)))
     
     # Get the random walk graph laplacian
-    L = rw_laplacian(M * A)
+    L = rw_laplacian(M * path_augment(A))
 
     # Get the bottom k eigenvectors of L
     Lf = factorize(L, k=1+MAX_REP)[0]
