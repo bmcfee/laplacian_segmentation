@@ -188,6 +188,13 @@ def rw_laplacian(A):
     L = np.eye(A.shape[0]) - (Dinv * A.T).T
     return L
 
+def sym_laplacian(A):
+    Dinv = np.sum(A, axis=1)**-1.0
+    Dinv[~np.isfinite(Dinv)] = 1.0
+    Dinv = np.diag(Dinv**0.5)
+    L = np.eye(len(A)) - Dinv.dot(A.dot(Dinv))
+    return L
+
 def factorize(L, k=20):
     e_vals, e_vecs = scipy.linalg.eig(L)
     e_vals = e_vals.real
@@ -252,8 +259,7 @@ def do_segmentation(X, beats, parameters):
     Xpad = np.pad(X, [(0,0), (N_STEPS, 0)], mode='edge')
     Xs = librosa.segment.stack_memory(Xpad, n_steps=N_STEPS)[:, N_STEPS:]
 
-#     k_link = 1 + int(np.ceil(np.log2(X.shape[1])))
-    k_link = 1 + int(np.ceil(P_LINK * X.shape[1]))
+    k_link = 1 + int(2 * np.ceil(np.log2(X.shape[1])))
     R = librosa.segment.recurrence_matrix(  Xs, 
                                             k=k_link, 
                                             width=REP_WIDTH, 
@@ -281,7 +287,7 @@ def do_segmentation(X, beats, parameters):
     
     # Get the random walk graph laplacian
 #     L = rw_laplacian(M * A)
-    L = rw_laplacian(M)
+    L = sym_laplacian(M)
 
     # Get the bottom k eigenvectors of L
     Lf = factorize(L, k=1+MAX_REP)[0]
