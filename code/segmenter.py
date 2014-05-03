@@ -233,22 +233,50 @@ def label_rep_sections(X, boundaries, n_types):
     
     return zip(boundaries[:-1], boundaries[1:]), labels
 
+def cond_entropy(y_old, y_new):
+    ''' Compute the conditional entropy of y_old given y_new'''
+    
+    # P[i,j] = |y_old[i] = y_new[j]|
+    P = sklearn.metrics.cluster.contingency_matrix(y_old, y_new)
+    
+    # Normalize to form the joint distribution
+    P = P.astype(float) / len(y_old)
+    
+    # Marginalize
+    P_new = P.sum(axis=0)
+    
+    h_old_given_new = scipy.stats.entropy(P, base=2.0)
+    
+    return P_new.dot(h_old_given_new)
+
 def label_clusterer(Lf, k_min, k_max):
+    best_score      = -np.inf
     best_boundaries = None
     best_n_types    = None
+
+    label_dict = {}
+    
+    # The trivial solution
+    label_dict[1]   = np.ones(Lf.shape[1])
 
     for n_types in range(2, MAX_REP+1):
         # Try to label the data with n_types 
         C = sklearn.cluster.KMeans(n_clusters=n_types, tol=1e-8)
         labels = C.fit_predict(Lf[:n_types].T)
-        
+        label_dict[n_types] = labels
+
         # Find the label change-points
         boundaries = 1 + np.asarray(np.where(labels[:-1] != labels[1:])).reshape((-1,))
         boundaries = np.unique(np.concatenate([[0], boundaries, [len(labels)]]))
         
-        if best_boundaries is None or (k_min < len(boundaries) and len(boundaries) < k_max):
+        # Compute the conditional entropy score: can we predict this labeling from the previous one?
+        score = cond_entropy(labels, label_dict[n_types-1]) / np.log2(n_types)
+
+        if score > best_score and len(boundaries) > k_min:
             best_boundaries = boundaries
             best_n_types    = n_types
+            best_score      = score
+
     
     intervals, labels = label_rep_sections(Lf[:best_n_types], best_boundaries, best_n_types)
     
