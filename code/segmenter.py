@@ -35,6 +35,7 @@ FILTER_WIDTH=1 + 2 * 8
 
 # How much mass should we put along the +- diagonals?  We don't want this to influence nodes with high degree
 # If we set the kernel weights appropriately, most edges should have weight >= exp(-0.5)
+# Let's set the ridge flow to be half the expected minimum weight for true links
 RIDGE_FLOW = np.exp(-0.5) / 2.0
 
 # How much state to use?
@@ -73,7 +74,7 @@ def hp_sep(y):
 def get_beats(y, sr, hop_length):
     
     odf = librosa.onset.onset_strength(y=y, sr=sr, hop_length=hop_length, aggregate=np.median, n_mels=128)
-    bpm, beats = librosa.beat.beat_track(onsets=odf, sr=sr, hop_length=hop_length)
+    bpm, beats = librosa.beat.beat_track(onsets=odf, sr=sr, hop_length=hop_length, start_bpm=120)
     
     if bpm < MIN_TEMPO:
         bpm, beats = librosa.beat.beat_track(onsets=odf, sr=sr, hop_length=hop_length, bpm=2*bpm)
@@ -110,7 +111,6 @@ def features(filename):
     times = librosa.frames_to_time(beats, sr=sr, hop_length=HOP_LENGTH)
     
     times = np.concatenate([times, [float(len(y)) / sr]])
-    
     return librosa.feature.sync(M1, beats, aggregate=np.median), times
 
 def save_segments(outfile, boundaries, beats, labels=None):
@@ -260,16 +260,19 @@ def label_clusterer(Lf, k_min, k_max):
     label_dict = {}
     
     # The trivial solution
-    label_dict[1]   = np.ones(Lf.shape[1])
+    label_dict[1]   = np.zeros(Lf.shape[1])
 
     for n_types in range(2, MAX_REP+1):
         # Try to label the data with n_types 
-        C = sklearn.cluster.KMeans(n_clusters=n_types, tol=1e-8)
+        C = sklearn.cluster.KMeans(n_clusters=n_types, tol=1e-10, n_init=100)
         labels = C.fit_predict(Lf[:n_types].T)
         label_dict[n_types] = labels
 
         # Find the label change-points
         boundaries = 1 + np.asarray(np.where(labels[:-1] != labels[1:])).reshape((-1,))
+
+        feasible = (len(boundaries) > k_min)
+
         boundaries = np.unique(np.concatenate([[0], boundaries, [len(labels)]]))
         
         # Compute the conditional entropy scores: 
@@ -283,7 +286,7 @@ def label_clusterer(Lf, k_min, k_max):
         #score = - mir_eval.util.f_measure(1-c1, 1-c2)
         score = - scipy.stats.entropy(labels)
 
-        if score > best_score and len(boundaries) > k_min:
+        if score > best_score and feasible:
             best_boundaries = boundaries
             best_n_types    = n_types
             best_score      = score
@@ -295,9 +298,9 @@ def label_clusterer(Lf, k_min, k_max):
         best_n_types    = n_types
 
 
-    intervals, labels = label_rep_sections(Lf[:best_n_types], best_boundaries, best_n_types)
+    intervals, best_labels = label_rep_sections(Lf[:best_n_types], best_boundaries, best_n_types)
     
-    return best_boundaries, labels
+    return best_boundaries, best_labels
 
 def estimate_bandwidth(D, k):
     D_sort = np.sort(D, axis=1)
@@ -321,7 +324,7 @@ def do_segmentation(X, beats, parameters):
     Xpad = np.pad(X, [(0,0), (N_STEPS, 0)], mode='edge')
     Xs = librosa.segment.stack_memory(Xpad, n_steps=N_STEPS)[:, N_STEPS:]
 
-    k_link = 1 + int(2 * np.ceil(np.log2(X.shape[1])))
+    k_link = 1 + int(np.ceil(2 * np.log2(X.shape[1])))
     R = librosa.segment.recurrence_matrix(  Xs, 
                                             k=k_link, 
                                             width=REP_WIDTH, 
