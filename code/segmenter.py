@@ -335,7 +335,7 @@ def do_segmentation(X, beats, parameters):
                                             width=REP_WIDTH, 
                                             metric=METRIC,
                                             sym=True).astype(np.float32)
-    A = self_similarity(X, k=k_link)
+    A = self_similarity(Xs, k=k_link)
 
     # Mask the self-similarity matrix by recurrence
     S = librosa.segment.structure_feature(R)
