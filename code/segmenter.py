@@ -274,7 +274,7 @@ def label_clusterer(Lf, k_min, k_max):
         # Find the label change-points
         boundaries = 1 + np.asarray(np.where(labels[:-1] != labels[1:])).reshape((-1,))
 
-        feasible = (len(boundaries) > k_min)
+        feasible = (len(boundaries) + 1 >= k_min) and (len(boundaries) + 1 <= k_max)
 
         boundaries = np.unique(np.concatenate([[0], boundaries, [len(labels)]]))
         
@@ -286,9 +286,8 @@ def label_clusterer(Lf, k_min, k_max):
 
         # take the harmonic mean
         # negate: we want to minimize s_f across levels
-        #       score = - mir_eval.util.f_measure(1-c1, 1-c2)
+        score = - mir_eval.util.f_measure(1-c1, 1-c2)
         #         score = - scipy.stats.entropy(labels)
-        score = c1
 
         if score > best_score and feasible:
             best_boundaries = boundaries
