@@ -35,8 +35,8 @@ FILTER_WIDTH=1 + 2 * 8
 
 # How much mass should we put along the +- diagonals?  We don't want this to influence nodes with high degree
 # If we set the kernel weights appropriately, most edges should have weight >= exp(-0.5)
-# Let's set the ridge flow to be half the expected minimum weight for true links
-RIDGE_FLOW = np.exp(-1.0)
+# Let's set the ridge flow to a small constant
+RIDGE_FLOW = np.exp(-2.0)
 
 # How much state to use?
 N_STEPS = 2
@@ -288,7 +288,7 @@ def label_clusterer(Lf, k_min, k_max):
         # negate: we want to minimize s_f across levels
 #         score = - mir_eval.util.f_measure(1-c1, 1-c2)
         #         score = - scipy.stats.entropy(labels)
-        score = c1
+        score = 0.5 * (c1 + c2)
 
         if score > best_score and feasible:
             best_boundaries = boundaries
