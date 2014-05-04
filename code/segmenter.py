@@ -219,7 +219,7 @@ def min_ridge(A, R):
     R = R.astype(np.bool)
     
     n = len(A)
-    D = np.ones(n)
+    D = RIDGE_FLOW * np.ones(n)
     for i in range(n):
         idx = R[i]
         if idx.any():
