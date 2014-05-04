@@ -36,7 +36,7 @@ FILTER_WIDTH=1 + 2 * 8
 # How much mass should we put along the +- diagonals?  We don't want this to influence nodes with high degree
 # If we set the kernel weights appropriately, most edges should have weight >= exp(-0.5)
 # Let's set the ridge flow to be half the expected minimum weight for true links
-RIDGE_FLOW = np.exp(-0.5) / 2.0
+RIDGE_FLOW = np.exp(-1.0)
 
 # How much state to use?
 N_STEPS = 2
