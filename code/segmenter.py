@@ -299,27 +299,15 @@ def label_clusterer(Lf, k_min, k_max):
     
     return best_boundaries, labels
 
-DISTANCE_QUANTILE = 0.5
-def estimate_bandwidth(D):
-    n = len(D)
-    
-    D = np.sort(D, axis=1)
-    
-    # Sigma[i] is some quantile distance from the ith point
-    sigma = D[:, min(n-1, 1 + int(DISTANCE_QUANTILE * n))]**0.5
-    
-    return np.multiply.outer(sigma, sigma)
+def estimate_bandwidth(D, k):
+    D_sort = np.sort(D, axis=1)
 
-# def estimate_bandwidth(D, k):
-#     D_sort = np.sort(D, axis=1)
-
-#     sigma = np.mean(D_sort[:, 1+k])
-#     return sigma
+    sigma = np.median(D_sort[:, 1+k])
+    return sigma
 
 def self_similarity(X, k):
     D = scipy.spatial.distance.cdist(X.T, X.T, metric=METRIC)
-#     sigma = estimate_bandwidth(D, k)
-    sigma = estimate_bandwidth(D)
+    sigma = estimate_bandwidth(D, k)
     A = np.exp(-0.5 * (D / sigma))
     return A
 
