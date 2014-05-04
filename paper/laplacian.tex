@@ -143,12 +143,9 @@ theory, as its spectrum can be used to characterize
 connectivity among vertices~\cite{chung1997spectral}.  
 Let $A$ denote the adjacency matrix of \cref{pathmatrix}, and define $D$ as the
 diagonal \emph{degree matrix}: $D \defeq \diag(\sum_{j} A_{\cdot, j})$.  The
-\emph{random-walk normalized Laplacian} $L$ is defined as:\footnote{Other forms of
-Laplacian normalization are commonly used in practice.  We selected random-walk
-normalization according to the motivations described by 
-von~Luxburg~\cite{von2007tutorial}.}
+\emph{symmetric normalized Laplacian} $L$ is defined as:
 \begin{equation}
-L \defeq D^{-1} (D - A) = I - D^{-1} A.\label{rwlaplacian}
+L \defeq D^{-1/2} (D - A) D^{-1/2}= I - D^{-1/2} A D^{-1/2}.\label{rwlaplacian}
 \end{equation}
 
 The Laplacian forms the basis of spectral clustering~\cite{von2007tutorial}.  The
@@ -177,15 +174,14 @@ number of structural components.
 
 % Addenda:
 % Fill in non-repeating regions with a planted clique
-\begin{figure}
+\begin{figure*}
 \centering
-\includegraphics[width=\columnwidth]{figs/recurrence}
-\caption{Upper-left: the recurrence matrix $R$ for \emph{The Beatles -- Come
-Together}; upper-right: the filtered $R'$; lower-left: a close-up of augmented
-recurrence matrix $A$ (first 140 samples); 
-lower-right the first 10 basis features, ordered bottom-to-top.  
-The first four rows encode the primary structural components.\label{recurrence}}
-\end{figure}
+\includegraphics[width=\textwidth]{figs/recurrence}
+\caption{Left: the recurrence matrix $R$ for \emph{The Beatles -- Come
+Together}. Center: the sequence-augmented adjacency matrix $A$.
+Right: the first 10 basis features (columns), ordered left-to-right.  The first four columns encode the primary structural components, while subsequent components represent structural
+refinements (individual measures).\label{recurrence}}
+\end{figure*}
 
  
 \begin{figure*}
@@ -230,8 +226,8 @@ bounds on the number of segments: $2 \leq k_\text{min} < k_\text{max}$}
 \ENSURE{Segment boundaries $B$, labels $C$}\\
 {\sc LSS}$(X, k_\text{min}, k_\text{max}$)
 \STATE{$R' \leftarrow $ filtered recurrence matrix of $X$ (\Cref{filtered-rep})}
-\STATE{$A \leftarrow R' + \diag_{+1}(\one) + \diag_{-1}(\one)$}
-\STATE{$L \leftarrow I - D^{-1} A$}
+\STATE{$A \leftarrow $ sequence-augmented adjacency matrix}
+\STATE{$L \leftarrow I - D^{-1/2} A D^{-1/2}$}
 \STATE{$Y \leftarrow$ bottom $M$ eigenvectors of $L$}
 \STATE{$B \leftarrow \text{\sc CPD}(Y, k_\text{min}, k_\text{max})$}
 \COMMENT{\Cref{cpd}}
