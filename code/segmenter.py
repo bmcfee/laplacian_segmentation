@@ -39,7 +39,7 @@ FILTER_WIDTH=1 + 2 * 8
 RIDGE_FLOW = np.exp(-1.0)
 
 # How much state to use?
-N_STEPS = 3
+N_STEPS = 2
 
 # Which similarity metric to use?
 METRIC='sqeuclidean'
