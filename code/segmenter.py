@@ -39,7 +39,7 @@ FILTER_WIDTH=1 + 2 * 8
 RIDGE_FLOW = np.exp(-1.0)
 
 # How much state to use?
-N_STEPS = 2
+N_STEPS = 3
 
 # Which similarity metric to use?
 METRIC='sqeuclidean'
@@ -329,7 +329,7 @@ def do_segmentation(X, beats, parameters):
     Xpad = np.pad(X, [(0,0), (N_STEPS, 0)], mode='edge')
     Xs = librosa.segment.stack_memory(Xpad, n_steps=N_STEPS)[:, N_STEPS:]
 
-    k_link = 1 + int(np.ceil(2 * np.log2(X.shape[1])))
+    k_link = 1 + int(np.ceil(np.log2(X.shape[1])))
     R = librosa.segment.recurrence_matrix(  Xs, 
                                             k=k_link, 
                                             width=REP_WIDTH, 
