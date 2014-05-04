@@ -136,6 +136,9 @@ cross-section links along the first diagonals.
 % matrix $C$, where $C_{i,j}$ indicates that $i$ and $j$ belong to the same structural
 % component (\eg, $i$ and $j$ are both of type \emph{verse}).
 
+
+\subsection{Edge weighting}
+
 \subsection{Spectral clustering}
 
 The Laplacian is a fundamental tool in the field of spectral graph
@@ -188,8 +191,9 @@ refinements (individual measures).\label{recurrence}}
 \centering
 \includegraphics[width=\textwidth]{figs/lowrank}
 \caption{Pairwise frame similarity using the first $5$ components for \emph{The Beatles -- Come Together}.  The first
-(trivial) component ($m=1$) captures the entire song, and the second ($m=2$) separates the solo and outro from the
-rest of the song.  Subsequent refinements separate the verses and refrains, and then encode internal structure.\label{lowrank}}
+(trivial) component ($m=1$) captures the entire song, and the second ($m=2$) separates
+the outro from the rest of the song.  Subsequent refinements separate solo, verses and
+refrains.\label{lowrank}}
 \end{figure*}
 
 \section{Algorithms}
@@ -199,13 +203,15 @@ rest of the song.  Subsequent refinements separate the verses and refrains, and 
 \begin{algorithm}
 \caption{Change-point detection\label{cpd}}
 \begin{algorithmic}[1]
-\REQUIRE{Repetition features $Y \in \R^{M \times n}$, $2 \leq k_\text{min} < k_\text{max}$}
+\REQUIRE{Repetition features $Y \in \R^{M \times n}$, $2 \leq k_\text{min}$}
 \ENSURE{Boundaries $B^*$, number of segment labels $m^*$}\\
 {\sc CPD}$(Y, k_\text{min}, k_\text{max})$
     \STATE{$B^* \leftarrow \emptyset$}
     \FOR{$m \leftarrow 1, 2, \ldots, M$}
-        \STATE{Run spectral $k$-means on $Y^{(m)}$ with $k=m$}
-        \STATE{Let $c_t$ be the cluster containing sample $t$}
+        \STATE{Let $\hat{y}_t \leftarrow Y_{1:m, t} / \|Y_{1:m, t}\|^2$}\\
+        \COMMENT{Truncate and normalize the columns of $Y$}
+        \STATE{Run $k$-means on $\{\hat{y}_t\}_{i=1}^n$ with $k=m$}
+        \STATE{Let $c_t$ be the cluster containing $\hat{y}_t$}
         \STATE{$B \leftarrow \{t \given c_t \neq c_{t+1}\}$}
         \IF{$B^* = \emptyset$ or $k_\text{min} \leq |B| + 1 \leq k_\text{max}$} 
         \STATE{$B^* \leftarrow B, \quad m^* \leftarrow m$}
