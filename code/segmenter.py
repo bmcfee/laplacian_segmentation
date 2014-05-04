@@ -318,7 +318,8 @@ def estimate_bandwidth(D):
 
 def self_similarity(X, k):
     D = scipy.spatial.distance.cdist(X.T, X.T, metric=METRIC)
-    sigma = estimate_bandwidth(D, k)
+#     sigma = estimate_bandwidth(D, k)
+    sigma = estimate_bandwidth(D)
     A = np.exp(-0.5 * (D / sigma))
     return A
 
