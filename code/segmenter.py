@@ -302,7 +302,7 @@ def label_clusterer(Lf, k_min, k_max):
 def estimate_bandwidth(D, k):
     D_sort = np.sort(D, axis=1)
 
-    sigma = np.median(D_sort[:, 1+k])
+    sigma = np.mean(D_sort[:, 1+k])
     return sigma
 
 def self_similarity(X, k):
