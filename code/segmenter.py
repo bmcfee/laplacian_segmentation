@@ -28,14 +28,14 @@ import librosa
 import mir_eval
 
 # Suppress neighbor links within REP_WIDTH beats of the current one
-REP_WIDTH=0
+REP_WIDTH=1
 
 # Only consider repetitions of at least (FILTER_WIDTH-1)/2
 FILTER_WIDTH=1 + 2 * 8
 
 # How much mass should we put along the +- diagonals?  We don't want this to influence nodes with high degree
 # If we set the kernel weights appropriately, most edges should have weight >= exp(-0.5)
-RIDGE_FLOW = np.exp(-1)
+RIDGE_FLOW = np.exp(-1.0)
 
 # How much state to use?
 N_STEPS = 2
@@ -50,7 +50,7 @@ SR=22050
 HOP_LENGTH=512
 
 # Maximum number of structural components to consider
-MAX_REP=10
+MAX_REP=12
 
 # Minimum and maximum average segment duration
 MIN_SEG=10.0
@@ -96,7 +96,7 @@ def features(filename):
                             hop_length=HOP_LENGTH, 
                             bins_per_octave=12, 
                             fmin=librosa.midi_to_hz(24), 
-                            n_bins=84))
+                            n_bins=72))
     
     
     M1 = librosa.logamplitude(M1**2.0, ref_power=np.max)
