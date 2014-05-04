@@ -256,6 +256,7 @@ def label_clusterer(Lf, k_min, k_max):
     best_score      = -np.inf
     best_boundaries = None
     best_n_types    = None
+    Y_best          = None
 
     label_dict = {}
     
@@ -263,9 +264,11 @@ def label_clusterer(Lf, k_min, k_max):
     label_dict[1]   = np.zeros(Lf.shape[1])
 
     for n_types in range(2, MAX_REP+1):
+        Y = librosa.util.normalize(Lf[:n_types].T, norm=2, axis=1)
+
         # Try to label the data with n_types 
         C = sklearn.cluster.KMeans(n_clusters=n_types, tol=1e-10, n_init=100)
-        labels = C.fit_predict(Lf[:n_types].T)
+        labels = C.fit_predict(Y)
         label_dict[n_types] = labels
 
         # Find the label change-points
@@ -290,15 +293,16 @@ def label_clusterer(Lf, k_min, k_max):
             best_boundaries = boundaries
             best_n_types    = n_types
             best_score      = score
+            Y_best          = Y
 
     # Did we fail to find anything with enough boundaries?
     # Take the last one then
     if best_boundaries is None:
         best_boundaries = boundaries
         best_n_types    = n_types
+        Y_best          = librosa.util.normalize(Lf[:best_n_types].T, norm=2, axis=1)
 
-
-    intervals, best_labels = label_rep_sections(Lf[:best_n_types], best_boundaries, best_n_types)
+    intervals, best_labels = label_rep_sections(Y_best.T, best_boundaries, best_n_types)
     
     return best_boundaries, best_labels
 
