@@ -215,6 +215,24 @@ def ridge(A):
     
     return A_out
 
+def min_ridge(A, R):
+    R = R.astype(np.bool)
+    
+    n = len(A)
+    D = np.ones(n)
+    for i in range(n):
+        idx = R[i]
+        if idx.any():
+            D[i] = np.mean(A[i, idx])
+
+    ridge_val = np.minimum(D[:-1], D[1:])
+    
+    A_out = A.copy()
+    A_out[range(n-1), range(1,n)] = ridge_val
+    A_out[range(1,n), range(n-1)] = ridge_val
+    
+    return A_out
+
 def factorize(L, k=20):
     e_vals, e_vecs = scipy.linalg.eig(L)
     e_vals = e_vals.real
@@ -356,7 +374,8 @@ def do_segmentation(X, beats, parameters):
     M = np.maximum(Rf, (np.eye(Rf.shape[0], k=1) + np.eye(Rf.shape[0], k=-1)))
     
     # Get the random walk graph laplacian
-    L = sym_laplacian(M * ridge(A))
+#     L = sym_laplacian(M * ridge(A))
+    L = sym_laplacian(M * min_ridge(A, Rf))
 
     # Get the bottom k eigenvectors of L
     Lf = factorize(L, k=1+MAX_REP)[0]
