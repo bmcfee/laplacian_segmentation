@@ -28,7 +28,7 @@ import librosa
 import mir_eval
 
 # Suppress neighbor links within REP_WIDTH beats of the current one
-REP_WIDTH=1
+REP_WIDTH=7
 
 # Only consider repetitions of at least (FILTER_WIDTH-1)/2
 FILTER_WIDTH=1 + 2 * 8
