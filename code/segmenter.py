@@ -290,13 +290,13 @@ def cond_entropy(y_old, y_new):
 
 def time_clusterer(Lf, k_min, k_max, times):
 
-    best_boundaries = np.asarray([0, Lf.shape[1]])
-    best_n_types    = 1
-    Y_best          = Lf[:1].T
+    best_boundaries = None#np.asarray([0, Lf.shape[1]])
+    best_n_types    = None#1
+    Y_best          = None#Lf[:1].T
 
     times = np.asarray(times)
 
-    for n_types in range(1, Lf.shape[0]):
+    for n_types in range(2, Lf.shape[0]):
         # Build the affinity matrix on the first n_types-1 repetition features
         Y = librosa.util.normalize(Lf[:n_types].T, norm=2, axis=1)
         # Try to label the data with n_types 
@@ -312,7 +312,8 @@ def time_clusterer(Lf, k_min, k_max, times):
         # Easier to compute this before filling it out
         feasible = (np.median(segment_deltas) >= MIN_SEG)
         
-        if feasible:
+        # Edge-case: always take at least 2 segment types
+        if feasible or n_types == 2:
             best_boundaries = boundaries
             best_n_types    = n_types
             Y_best          = Y
@@ -451,8 +452,8 @@ def do_segmentation(X, beats, parameters):
     # Get the bottom k eigenvectors of L
     Lf = factorize(L, k=1+MAX_REP)[0]
 
-    boundaries, labels = label_clusterer(Lf, k_min, k_max)
-#     boundaries, labels = time_clusterer(Lf, k_min, k_max, beats)
+#     boundaries, labels = label_clusterer(Lf, k_min, k_max)
+    boundaries, labels = time_clusterer(Lf, k_min, k_max, beats)
 
     # Output lab file
     print '\tsaving output to ', parameters['output_file']
