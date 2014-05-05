@@ -290,9 +290,9 @@ def cond_entropy(y_old, y_new):
 
 def time_clusterer(Lf, k_min, k_max, times):
 
-    best_boundaries = None#np.asarray([0, Lf.shape[1]])
-    best_n_types    = None#1
-    Y_best          = None#Lf[:1].T
+    best_boundaries = None
+    best_n_types    = None
+    Y_best          = None
 
     times = np.asarray(times)
 
@@ -310,7 +310,7 @@ def time_clusterer(Lf, k_min, k_max, times):
         segment_deltas = np.diff(times[boundaries])
         
         # Easier to compute this before filling it out
-        feasible = (np.median(segment_deltas) >= MIN_SEG)
+        feasible = (np.mean(segment_deltas) >= MIN_SEG)
         
         # Edge-case: always take at least 2 segment types
         if feasible or n_types == 2:
