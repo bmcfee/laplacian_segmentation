@@ -308,7 +308,7 @@ def time_clusterer(Lf, k_min, k_max, times):
         
     intervals, labels = label_rep_sections(Y_best.T, best_boundaries, best_n_types)
     
-    return intervals, labels
+    return best_boundaries, labels
 
 def label_clusterer(Lf, k_min, k_max):
     best_score      = -np.inf
