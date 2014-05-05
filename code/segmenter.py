@@ -251,6 +251,19 @@ def local_ridge(A_rep, A_loc):
     
     return A_out
 
+def weighted_ridge(A_rep, A_loc):
+    ''' Find mu such that mu * deg(A_rep, i) ~= (1-mu) * deg(A_loc, i)
+    
+    Goal: avg flow should be balanced between the repeater graph and the sequence graph
+
+    '''
+    d1 = np.sum(A_rep, axis=1)
+    d2 = np.sum(A_loc, axis=1)
+    
+    ds = d1 + d2
+    mu = d2.dot(ds) / np.dot(ds, ds)
+    return mu * A_rep + (1 - mu) * A_loc
+
 def factorize(L, k=20):
     e_vals, e_vecs = scipy.linalg.eig(L)
     e_vals = e_vals.real
@@ -445,7 +458,8 @@ def do_segmentation(X, beats, parameters):
     M = np.maximum(Rf, (np.eye(Rf.shape[0], k=1) + np.eye(Rf.shape[0], k=-1)))
     
     # Get the random walk graph laplacian
-    T = M * local_ridge(A_rep, A_loc)
+#     T = M * local_ridge(A_rep, A_loc)
+    T = weighted_ridge(M * A_rep, A_loc)
 
     L = sym_laplacian(T)
 
