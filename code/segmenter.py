@@ -38,6 +38,10 @@ RIDGE_FLOW = np.exp(-2.0)
 # How much state to use?
 N_STEPS = 2
 
+# Local model
+N_MELS = 128
+N_MFCC = 13
+
 # Which similarity metric to use?
 METRIC='sqeuclidean'
 
@@ -79,16 +83,16 @@ def get_beats(y, sr, hop_length):
     return bpm, beats
 
 def features(filename):
-    print '\t[1/4] loading audio'
+    print '\t[1/5] loading audio'
     y, sr = librosa.load(filename, sr=SR)
     
-    print '\t[2/4] Separating harmonic and percussive signals'
+    print '\t[2/5] Separating harmonic and percussive signals'
     y_perc, y_harm = hp_sep(y)
     
-    print '\t[3/4] detecting beats'
+    print '\t[3/5] detecting beats'
     bpm, beats = get_beats(y=y_perc, sr=sr, hop_length=HOP_LENGTH)
     
-    print '\t[4/4] generating CQT'
+    print '\t[4/5] generating CQT'
     M1 = np.abs(librosa.cqt(y=y_harm, 
                             sr=sr, 
                             hop_length=HOP_LENGTH, 
@@ -96,10 +100,13 @@ def features(filename):
                             fmin=librosa.midi_to_hz(24), 
                             n_bins=72))
     
-    
     M1 = librosa.logamplitude(M1**2.0, ref_power=np.max)
 
-    n = M1.shape[1]
+    print '\t[5/5] generating MFCC'
+    S = librosa.feature.melspectrogram(y=y, sr=sr, hop_length=HOP_LENGTH, n_mels=N_MELS)
+    M2 = librosa.feature.mfcc(librosa.logamplitude(S), n_mfcc=N_MFCC)
+
+    n = min(M1.shape[1], M2.shape[1])
     
     beats = beats[beats < n]
     
@@ -108,7 +115,9 @@ def features(filename):
     times = librosa.frames_to_time(beats, sr=sr, hop_length=HOP_LENGTH)
     
     times = np.concatenate([times, [float(len(y)) / sr]])
-    return librosa.feature.sync(M1, beats, aggregate=np.median), times
+    M1 = librosa.feature.sync(M1, beats, aggregate=np.median)
+    M2 = librosa.feature.sync(M2, beats, aggregate=np.mean)
+    return (M1, M2), times
 
 def save_segments(outfile, boundaries, beats, labels=None):
 
@@ -225,6 +234,18 @@ def min_ridge(A, R):
     ridge_val = np.minimum(D[:-1], D[1:])
     
     A_out = A.copy()
+    A_out[range(n-1), range(1,n)] = ridge_val
+    A_out[range(1,n), range(n-1)] = ridge_val
+    
+    return A_out
+
+def local_ridge(A_rep, A_loc):
+    
+    n = len(A_rep)
+    
+    ridge_val = np.diag(A_loc, k=1)
+    
+    A_out = A_rep.copy()
     A_out[range(n-1), range(1,n)] = ridge_val
     A_out[range(1,n), range(n-1)] = ridge_val
     
@@ -369,21 +390,26 @@ def self_similarity(X, k):
 
 def do_segmentation(X, beats, parameters):
 
+    X_rep, X_loc = X
     # Find the segment boundaries
     print '\tpredicting segments...'
     k_min, k_max  = get_num_segs(beats[-1])
 
     # Get the raw recurrence plot
-    Xpad = np.pad(X, [(0,0), (N_STEPS, 0)], mode='edge')
+    Xpad = np.pad(X_rep, [(0,0), (N_STEPS, 0)], mode='edge')
     Xs = librosa.segment.stack_memory(Xpad, n_steps=N_STEPS)[:, N_STEPS:]
 
-    k_link = 1 + int(np.ceil(2 * np.log2(X.shape[1])))
+    k_link = 1 + int(np.ceil(2 * np.log2(X_rep.shape[1])))
     R = librosa.segment.recurrence_matrix(  Xs, 
                                             k=k_link, 
                                             width=REP_WIDTH, 
                                             metric=METRIC,
                                             sym=True).astype(np.float32)
-    A = self_similarity(Xs, k=k_link)
+    # Generate the repetition kernel
+    A_rep = self_similarity(X_rep, k=k_link)
+
+    # And the local path kernel
+    A_loc = self_similarity(X_loc, k=k_link)
 
     # Mask the self-similarity matrix by recurrence
     S = librosa.segment.structure_feature(R)
@@ -405,7 +431,8 @@ def do_segmentation(X, beats, parameters):
     
     # Get the random walk graph laplacian
 #     L = sym_laplacian(M * ridge(A))
-    L = sym_laplacian(M * min_ridge(A, Rf))
+#    L = sym_laplacian(M * min_ridge(A, Rf))
+    L = sym_laplacian(M * local_ridge(A_rep, A_loc))
 
     # Get the bottom k eigenvectors of L
     Lf = factorize(L, k=1+MAX_REP)[0]
