@@ -24,9 +24,6 @@ import sklearn.cluster
 # Requires librosa-develop 0.3 branch
 import librosa
 
-# Requires mir_eval for f-measure calculation
-import mir_eval
-
 # Suppress neighbor links within REP_WIDTH beats of the current one
 REP_WIDTH=7
 
@@ -271,9 +268,9 @@ def cond_entropy(y_old, y_new):
     return P_new.dot(h_old_given_new)
 
 def time_clusterer(Lf, k_min, k_max, times):
-    best_score        = -np.inf
-    best_boundaries = None
-    best_n_types    = None
+
+    best_boundaries = np.asarray([0, Lf.shape[1]])
+    best_n_types    = 1
 
     times = np.asarray(times)
 
@@ -286,26 +283,18 @@ def time_clusterer(Lf, k_min, k_max, times):
         
         boundaries = 1 + np.asarray(np.where(labels[:-1] != labels[1:])).reshape((-1,))
         
-        segment_timings = np.diff(times[boundaries])
+        boundaries = np.unique(np.concatenate([[0], boundaries, [len(labels)]]))
+
+        segment_deltas = np.diff(times[boundaries])
         
         # Easier to compute this before filling it out
-        feasible = (np.mean(segment_timings) >= MIN_SEG)
+        feasible = (np.median(segment_deltas) >= MIN_SEG)
         
-        boundaries = np.unique(np.concatenate([[0], boundaries, [len(labels)]]))
-        
-        score = n_types
-        
-        if score > best_score and feasible:
+        if feasible:
             best_boundaries = boundaries
             best_n_types    = n_types
-            best_score      = score
             Y_best          = Y
     
-    if best_boundaries is None:
-        best_boundaries = boundaries
-        best_n_types = n_types
-        Y_best = Y
-        
     intervals, labels = label_rep_sections(Y_best.T, best_boundaries, best_n_types)
     
     return best_boundaries, labels
@@ -387,7 +376,7 @@ def do_segmentation(X, beats, parameters):
     Xpad = np.pad(X, [(0,0), (N_STEPS, 0)], mode='edge')
     Xs = librosa.segment.stack_memory(Xpad, n_steps=N_STEPS)[:, N_STEPS:]
 
-    k_link = 1 + int(np.ceil(np.log2(X.shape[1])))
+    k_link = 1 + int(np.ceil(2 * np.log2(X.shape[1])))
     R = librosa.segment.recurrence_matrix(  Xs, 
                                             k=k_link, 
                                             width=REP_WIDTH, 
