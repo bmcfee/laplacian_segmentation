@@ -52,7 +52,7 @@ SR=22050
 HOP_LENGTH=512
 
 # Maximum number of structural components to consider
-MAX_REP=12
+MAX_REP=10
 
 # Minimum and maximum average segment duration
 MIN_SEG=10.0
