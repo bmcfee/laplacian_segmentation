@@ -269,8 +269,9 @@ def cond_entropy(y_old, y_new):
 
 def time_clusterer(Lf, k_min, k_max, times):
 
-    best_boundaries = None
-    best_n_types    = None
+    best_boundaries = np.asarray([0, Lf.shape[1]])
+    best_n_types    = 1
+    Y_best          = Lf[:1].T
 
     times = np.asarray(times)
 
