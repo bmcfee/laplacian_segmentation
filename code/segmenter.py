@@ -388,6 +388,20 @@ def self_similarity(X, k):
     A = np.exp(-0.5 * (D / sigma))
     return A
 
+def local_similarity(X):
+    
+    d, n = X.shape
+    
+    dists = np.sum(np.diff(X, axis=1)**2, axis=0)
+    # dists[i] = ||X[i] - X[i-1]||
+    
+    sigma = np.mean(dists)
+    
+    rbf = np.exp(-0.5 * (dists / sigma))
+    
+    A = np.diag(rbf, k=1) + np.diag(rbf, k=-1)
+    return A
+
 def do_segmentation(X, beats, parameters):
 
     X_rep, X_loc = X
@@ -409,7 +423,7 @@ def do_segmentation(X, beats, parameters):
     A_rep = self_similarity(X_rep, k=k_link)
 
     # And the local path kernel
-    A_loc = self_similarity(X_loc, k=k_link)
+    A_loc = local_similarity(X_loc)
 
     # Mask the self-similarity matrix by recurrence
     S = librosa.segment.structure_feature(R)
