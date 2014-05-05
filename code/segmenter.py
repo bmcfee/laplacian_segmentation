@@ -423,7 +423,7 @@ def do_segmentation(X, beats, parameters):
     A_rep = self_similarity(X_rep, k=k_link)
 
     # And the local path kernel
-    A_loc = local_similarity(X_loc)
+    A_loc = self_similarity(X_loc, k=k_link)
 
     # Mask the self-similarity matrix by recurrence
     S = librosa.segment.structure_feature(R)
