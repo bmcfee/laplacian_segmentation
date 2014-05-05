@@ -275,19 +275,12 @@ def time_clusterer(Lf, k_min, k_max, times):
     best_boundaries = None
     best_n_types    = None
 
-    label_dict = {}
-    
-    # The trivial segmentation
-    label_dict[1] = np.zeros(Lf.shape[1])
-    
-    
     for n_types in range(2, MAX_REP+1):
         # Build the affinity matrix on the first n_types-1 repetition features
         Y = librosa.util.normalize(Lf[:n_types].T, norm=2, axis=1)
         # Try to label the data with n_types 
         C = sklearn.cluster.KMeans(n_clusters=n_types, tol=1e-10, n_init=100)
         labels = C.fit_predict(Y)
-        label_dict[n_types] = labels
         
         boundaries = 1 + np.asarray(np.where(labels[:-1] != labels[1:])).reshape((-1,))
         
@@ -313,7 +306,7 @@ def time_clusterer(Lf, k_min, k_max, times):
         
     intervals, labels = label_rep_sections(Y_best.T, best_boundaries, best_n_types)
     
-    return intervals, labels, label_dict
+    return intervals, labels
 
 def label_clusterer(Lf, k_min, k_max):
     best_score      = -np.inf
