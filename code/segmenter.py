@@ -55,7 +55,7 @@ HOP_LENGTH=512
 MAX_REP=12
 
 # Minimum and maximum average segment duration
-MIN_SEG=8.0
+MIN_SEG=10.0
 MAX_SEG=30.0
 
 # Minimum tempo threshold; if we dip below this, double the bpm estimator and resample
@@ -451,8 +451,8 @@ def do_segmentation(X, beats, parameters):
     # Get the bottom k eigenvectors of L
     Lf = factorize(L, k=1+MAX_REP)[0]
 
-#     boundaries, labels = label_clusterer(Lf, k_min, k_max)
-    boundaries, labels = time_clusterer(Lf, k_min, k_max, beats)
+    boundaries, labels = label_clusterer(Lf, k_min, k_max)
+#     boundaries, labels = time_clusterer(Lf, k_min, k_max, beats)
 
     # Output lab file
     print '\tsaving output to ', parameters['output_file']
