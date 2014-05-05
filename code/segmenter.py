@@ -223,7 +223,7 @@ def min_ridge(A, R):
     for i in range(n):
         idx = R[i]
         if idx.any():
-            D[i] = np.mean(A[i, idx])
+            D[i] = np.min(A[i, idx])
 
     ridge_val = np.minimum(D[:-1], D[1:])
     
