@@ -269,12 +269,12 @@ def cond_entropy(y_old, y_new):
 
 def time_clusterer(Lf, k_min, k_max, times):
 
-    best_boundaries = np.asarray([0, Lf.shape[1]])
-    best_n_types    = 1
+    best_boundaries = None
+    best_n_types    = None
 
     times = np.asarray(times)
 
-    for n_types in range(2, MAX_REP+1):
+    for n_types in range(1, Lf.shape[0]):
         # Build the affinity matrix on the first n_types-1 repetition features
         Y = librosa.util.normalize(Lf[:n_types].T, norm=2, axis=1)
         # Try to label the data with n_types 
