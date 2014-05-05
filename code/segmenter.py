@@ -275,6 +275,8 @@ def time_clusterer(Lf, k_min, k_max, times):
     best_boundaries = None
     best_n_types    = None
 
+    times = np.asarray(times)
+
     for n_types in range(2, MAX_REP+1):
         # Build the affinity matrix on the first n_types-1 repetition features
         Y = librosa.util.normalize(Lf[:n_types].T, norm=2, axis=1)
