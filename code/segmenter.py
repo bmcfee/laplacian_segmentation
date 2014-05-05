@@ -447,7 +447,8 @@ def do_segmentation(X, beats, parameters):
     # Get the random walk graph laplacian
 #     L = sym_laplacian(M * ridge(A))
 #    L = sym_laplacian(M * min_ridge(A, Rf))
-    L = sym_laplacian(M * local_ridge(A_rep, A_loc))
+#     L = sym_laplacian(M * local_ridge(A_rep, A_loc))
+    L = sym_laplacian(M * local_ridge(M, A_loc))
 
     # Get the bottom k eigenvectors of L
     Lf = factorize(L, k=1+MAX_REP)[0]
