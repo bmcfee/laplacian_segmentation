@@ -363,15 +363,16 @@ def label_clusterer(Lf, k_min, k_max):
         
         # Compute the conditional entropy scores: 
         #   can we predict this labeling from the previous one?
-        c1 = cond_entropy(labels, label_dict[n_types-1]) / np.log(n_types + 1e-12)
+#         c1 = cond_entropy(labels, label_dict[n_types-1]) / np.log(n_types + 1e-12)
         #   or vice versa?
-        c2 = cond_entropy(label_dict[n_types-1], labels) / np.log(n_types-1 + 1e-12)
+#         c2 = cond_entropy(label_dict[n_types-1], labels) / np.log(n_types-1 + 1e-12)
 
         # take the harmonic mean
         # negate: we want to minimize s_f across levels
 #         score = - mir_eval.util.f_measure(1-c1, 1-c2)
         #         score = - scipy.stats.entropy(labels)
-        score = 0.5 * (c1 + c2)
+#         score = 0.5 * (c1 + c2)
+        score = - sklearn.metrics.completeness_score(labels, label_dict[n_types-1])
 
         if score > best_score and feasible:
             best_boundaries = boundaries
@@ -466,8 +467,8 @@ def do_segmentation(X, beats, parameters):
     # Get the bottom k eigenvectors of L
     Lf = factorize(L, k=1+MAX_REP)[0]
 
-#     boundaries, labels = label_clusterer(Lf, k_min, k_max)
-    boundaries, labels = time_clusterer(Lf, k_min, k_max, beats)
+    boundaries, labels = label_clusterer(Lf, k_min, k_max)
+#     boundaries, labels = time_clusterer(Lf, k_min, k_max, beats)
 
     # Output lab file
     print '\tsaving output to ', parameters['output_file']
