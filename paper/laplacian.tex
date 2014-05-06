@@ -118,7 +118,7 @@ self-similarity matrix directly, whereas the method proposed here operates on th
 graph Laplacian.  As we will demonstrate below, this leads to a much simpler method
 for exposing block-structure.
 
-\section{Encoding repetition}
+\section{Encoding repeated structure}
 % Begin with nearest-neighbor linkage in some feature space
 % Apply diagonal majority vote filtering
 % Add the conveyor belt links
@@ -224,7 +224,7 @@ d(\Delta)\|^2}.\label{optweight:solution}
 \end{equation}
 Note that because $\Delta$ is fully connected, $\|d(\Delta)\|^2 > 0$, which implies
 $\mu^* > 0$.  Consequently, $R^\mu$ retains the full connectivity structure
-of $R^+$.
+of $R^+$, and remains connected even when $R'$ is empty.
 
 \subsection{Edge weighting and feature fusion}
 In the construction above, we rely upon a single feature representation $X$ to 
@@ -341,13 +341,13 @@ refrain, verse, and outro, and then refine each component into individual measur
 \subsection{Structure annotation}
 
 \begin{algorithm}
-\caption{Laplacian structural segmentation\label{lss}}
+\caption{Laplacian structural decomposition\label{lss}}
 \begin{algorithmic}[1]
 \REQUIRE{ Affinities: $S^\text{rep}, S^\text{loc} \in \R_+^{n\times n}$\\
 maximum number of segment types: $M$\\
 bounds on the number of segments: $2 \leq k_\text{min} < k_\text{max}$}
 \ENSURE{Segment boundaries $B$, labels $C$}\\
-{\sc LSS}$(S^\text{rep}, S^\text{loc}, k_\text{min}, k_\text{max}$)
+{\sc LSD}$(S^\text{rep}, S^\text{loc}, k_\text{min}, k_\text{max}$)
 \STATE{$R' \leftarrow $ filtered recurrence matrix of $S^\text{rep}$ (\Cref{filtered-rep})}
 \STATE{$A \leftarrow $ sequence-augmented affinity matrix (\Cref{saam})}
 \STATE{$L \leftarrow I - D^{-1/2} A D^{-1/2}$}

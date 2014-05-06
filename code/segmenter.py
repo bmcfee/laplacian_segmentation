@@ -273,6 +273,9 @@ def factorize(L, k=20):
     e_vals = e_vals[idx]
     e_vecs = e_vecs[:, idx]
     
+    if len(e_vals) < k + 1:
+        k = -1
+
     return e_vecs[:, :k].T, e_vals[k] - e_vals[k-1]
 
 def label_rep_sections(X, boundaries, n_types):
@@ -346,7 +349,7 @@ def label_clusterer(Lf, k_min, k_max):
     # The trivial solution
     label_dict[1]   = np.zeros(Lf.shape[1])
 
-    for n_types in range(2, MAX_REP+1):
+    for n_types in range(2, Lf.shape[0]):
         Y = librosa.util.normalize(Lf[:n_types].T, norm=2, axis=1)
 
         # Try to label the data with n_types 
