@@ -338,6 +338,9 @@ def time_clusterer(Lf, k_min, k_max, times):
     
     return best_boundaries, labels
 
+def segment_speed(Y):
+    return np.mean(np.abs(np.diff(Y, axis=1))**2)
+
 def label_clusterer(Lf, k_min, k_max):
     best_score      = -np.inf
     best_boundaries = None
@@ -375,7 +378,8 @@ def label_clusterer(Lf, k_min, k_max):
 #         score = - mir_eval.util.f_measure(1-c1, 1-c2)
         #         score = - scipy.stats.entropy(labels)
 #         score = 0.5 * (c1 + c2)
-        score = - sklearn.metrics.completeness_score(labels, label_dict[n_types-1])
+#         score = - sklearn.metrics.completeness_score(labels, label_dict[n_types-1])
+        score = - segment_speed(Y.T)
 
         if score > best_score and feasible:
             best_boundaries = boundaries

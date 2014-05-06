@@ -211,7 +211,7 @@ $$
 \mu \sum_j R'_{ij} \approx (1-\mu) \sum_j \Delta_{ij} 
 $$
 Minimizing the average squared error between the two terms above leads to the
-following convex optimization problem:
+following quadratic optimization problem:
 \begin{equation}
 \min_{\mu \in [0, 1]} \frac{1}{2} \sum_i {(\mu d_i(R') - (1 - \mu)d_i(\Delta))}^2,\label{optweight}
 \end{equation}
@@ -252,10 +252,9 @@ respectively supplied in the form of affinity matrices $S^\text{rep}$ and
 $S^\text{loc}$.  Combining these affinities with the detected repetition structure and
 optimal weighting, we arrive at the \emph{sequence-augmented affinity matrix} $A$:
 \begin{equation}
-A \defeq \mu \left(R' \odot S^\text{rep}\right) + (1-\mu) \left(\Delta \odot
-S^\text{loc}\right),\label{saam}
+A_{ij} \defeq \mu R'_{ij} S^\text{rep}_{ij} + (1-\mu) \Delta_{ij} S^\text{loc}_{ij},\label{saam}
 \end{equation}
-where $\odot$ denotes the element-wise product, $R'$ is understood to be
+where $R'$ is understood to be
 constructed solely from the repetition affinities $S^\text{rep}$, and $\mu$ is
 optimized by \eqref{optweight:solution} on the weighted affinity matrices.
 
