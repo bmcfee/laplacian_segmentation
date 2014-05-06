@@ -460,7 +460,8 @@ def do_segmentation(X, beats, parameters):
     
     # Get the random walk graph laplacian
 #     T = M * local_ridge(A_rep, A_loc)
-    T = weighted_ridge(Rf * A_rep, (np.eye(len(A_loc),k=1) + np.eye(len(A_loc),k=-1)) * A_loc)
+#     T = weighted_ridge(Rf * A_rep, (np.eye(len(A_loc),k=1) + np.eye(len(A_loc),k=-1)) * A_loc)
+    T = weighted_ridge(Rf, (np.eye(len(A_loc),k=1) + np.eye(len(A_loc),k=-1)))
 
     L = sym_laplacian(T)
 
