@@ -28,7 +28,7 @@ import librosa
 REP_WIDTH=7
 
 # Only consider repetitions of at least (FILTER_WIDTH-1)/2
-FILTER_WIDTH=1 + 2 * 4
+FILTER_WIDTH=1 + 2 * 8
 
 # How much mass should we put along the +- diagonals?  We don't want this to influence nodes with high degree
 # If we set the kernel weights appropriately, most edges should have weight >= exp(-0.5)
@@ -43,7 +43,8 @@ N_MELS = 128
 N_MFCC = 13
 
 # Which similarity metric to use?
-METRIC='sqeuclidean'
+# METRIC='sqeuclidean'
+METRIC='cosine'
 
 # Sample rate for signal analysis
 SR=22050
