@@ -456,12 +456,12 @@ def do_segmentation(X, beats, parameters):
 
     # We can jump to a random neighbor, or +- 1 step in time
     # Call it the infinite jukebox matrix
-    M = np.maximum(Rf, (np.eye(Rf.shape[0], k=1) + np.eye(Rf.shape[0], k=-1)))
+#     M = np.maximum(Rf, (np.eye(Rf.shape[0], k=1) + np.eye(Rf.shape[0], k=-1)))
     
     # Get the random walk graph laplacian
 #     T = M * local_ridge(A_rep, A_loc)
-#     T = weighted_ridge(Rf * A_rep, (np.eye(len(A_loc),k=1) + np.eye(len(A_loc),k=-1)) * A_loc)
-    T = weighted_ridge(Rf, (np.eye(len(A_loc),k=1) + np.eye(len(A_loc),k=-1)))
+    T = weighted_ridge(Rf * A_rep, (np.eye(len(A_loc),k=1) + np.eye(len(A_loc),k=-1)) * A_loc)
+#     T = weighted_ridge(Rf, (np.eye(len(A_loc),k=1) + np.eye(len(A_loc),k=-1)))
 
     L = sym_laplacian(T)
 

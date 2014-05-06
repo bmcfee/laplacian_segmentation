@@ -164,7 +164,7 @@ $$
 Minimizing the average squared error between the two terms above leads to the
 following convex optimization problem:
 \begin{equation}
-\min_{\mu \in [0, 1]} \sum_i {(\mu d_i(R') + (1 - \mu)d_i(\Delta))}^2,\label{optweight}
+\min_{\mu \in [0, 1]} \sum_i {(\mu d_i(R') - (1 - \mu)d_i(\Delta))}^2,\label{optweight}
 \end{equation}
 where $d_i(A) \defeq \sum_j A_{ij}$ indicates the degree (sum of incident edge-weights) 
 of $i$ in $A$. By treating ${[d_i(\cdot)]}_{i=1}^n$ as vectors in $\R^n_+$, we
