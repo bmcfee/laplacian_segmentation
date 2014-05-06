@@ -360,7 +360,7 @@ def label_clusterer(Lf, k_min, k_max):
         # Find the label change-points
         boundaries = 1 + np.asarray(np.where(labels[:-1] != labels[1:])).reshape((-1,))
 
-        feasible = (len(boundaries) + 1 >= k_min) and (len(boundaries) + 1 <= k_max)
+        feasible = (len(boundaries) + 1 >= k_min)# and (len(boundaries) + 1 <= k_max)
 
         boundaries = np.unique(np.concatenate([[0], boundaries, [len(labels)]]))
         
