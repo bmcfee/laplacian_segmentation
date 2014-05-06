@@ -363,10 +363,10 @@ def label_clusterer(Lf, k_min, k_max):
         # Find the label change-points
         boundaries = 1 + np.asarray(np.where(labels[:-1] != labels[1:])).reshape((-1,))
 
-        feasible = (len(boundaries) + 1 >= k_min)# and (len(boundaries) + 1 <= k_max)
-
         boundaries = np.unique(np.concatenate([[0], boundaries, [len(labels)]]))
         
+        feasible = (len(boundaries) + 1 >= k_min)# and (len(boundaries) + 1 <= k_max)
+
         # Compute the conditional entropy scores: 
         #   can we predict this labeling from the previous one?
 #         c1 = cond_entropy(labels, label_dict[n_types-1]) / np.log(n_types + 1e-12)
