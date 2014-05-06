@@ -58,26 +58,65 @@ to apply the proposed method to the task of music segmentation.
 \end{abstract}
 %
 \section{Introduction}\label{sec:introduction}
+Detecting repeated forms in audio is fundamental to the analysis of structure in many 
+forms of music.  While small-scale repetitions --- such as each instance of an
+individual chord --- are simple to detect, accurately combining multiple 
+small-scale repetitions into larger structures is a challenging algorithmic task.
+Much of the current research on this topic begins by calculating local, frame-wise
+similarities over acoustic features (usually harmonic), and then searching for
+patterns in the all-pairs self-similarity matrix~\cite{foote2000automatic}.
+
+In the majority of existing work on structural segmentation, the analysis is
+\emph{linear}, in the sense that the representation does not explicitly encode nesting
+or hierarchical structure in the repeated forms.  Instead, novelty curves are commonly
+used to detect when one section transitions into the
+next~\cite{serra2012unsupervised}. 
+
+% TODO:   2014-05-06 08:09:31 by Brian McFee <brm2132@columbia.edu>
+%  why are we doing this work?
+%   one level of segmentation is never enough
+%   we want a full parse of the recording
+%   how do nested structures relate to each-other?
+
 
 \subsection{Our contributions}
+In this paper, we formulate the structure analysis problem in the context of spectral
+graph theory.  By combining local sequence information with long-term repeated forms,
+and analyzing the eigenvectors of the resulting graph Laplacian, we produce a compact
+representation that effectively encodes repetition structure at multiple levels of
+granularity.  To effectively link repeating sequences, we formulate an optimally
+weighted combination of local timbre consistency and long-term repetition descriptors.
+
+To motivate the analysis technique, we demonstrate its use for the
+standard task of flat structural annotation.  However, we emphasize that the approach
+itself could have more general applications in analyzing hierarchical structure.
 
 \subsection{Related work}
 
-
-\cite{mauch2009using}
-
-
-\cite{serra2012unsupervised}
+The structural repetition features used in this work are inspired by those of
+Serr\`{a}~\etal~\cite{serra2012unsupervised}, wherein structure is detected by 
+applying filtering operators to a lag-skewed self-similarity matrix.  The primary
+deviation in this work is the graphical interpretation and subsequent analysis of 
+the filtered self-similarity matrix.
 
 % kaiser proposed a method to combine input features for novelty detection
 % our method is different: we optimally combine local timbre information with global
 % harmonic repetition
-\cite{kaiser2013simple}
+Recently, Kaiser~\etal demonstrated a method to combine tonal and timbral features for
+structural boundary detection~\cite{kaiser2013simple}.  Whereas their method forms a
+novelty curve from the combination of multiple features, our feature combination
+operates slightly differently, and uses local timbre consistency to connect sequences
+of long-range tonal repetitions.
 
 % grohganz used spectral analysis of self-similarity to detect diagonals
 % but our approach is more direct, analyzes the diffusion process rather than the
 % graph itself
-\cite{grohganz2013converting}
+Our general idea is most similar to that of Grohganz \etal~\cite{grohganz2013converting},
+in which diagonal bands of a self-similarity matrix are expanded into block structures
+by spectral analysis.  Their method analyzed the spectral decomposition of the 
+self-similarity matrix directly, whereas the method proposed here operates on the
+graph Laplacian.  As we will demonstrate below, this leads to a much simpler method
+for exposing block-structure.
 
 \section{Encoding repetition}
 % Begin with nearest-neighbor linkage in some feature space
