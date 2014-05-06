@@ -77,7 +77,7 @@ to apply the proposed method to the task of music segmentation.
 
 Let $X = [x_1, x_2, \dots, x_n] \in \R^{d\times n}$ denote a $d$-dimensional time
 series feature matrix, \eg, a chromagram or sequence of Mel-frequency cepstral 
-coefficients).  As a first step toward detecting and representing repetition structure, 
+coefficients.  As a first step toward detecting and representing repetition structure, 
 we form a \emph{binary recurrence matrix} $R \in \{0,1\}^{n\times n}$, where 
 \begin{equation}
 R_{ij}(X) \defeq \begin{cases}
@@ -101,6 +101,7 @@ R'_{ij} \defeq \maj\left\{ R_{i+t, j+t} \given t \in -w, -w+1, \dots, w\right\},
 where $w$ is a discrete parameter that defines the minimum length of a valid
 repetition sequence.
 
+\subsection{Internal connectivity}
 The filtered recurrence matrix $R'$ can be interpreted as an unweighted, undirected 
 graph, whose vertices correspond to samples (columns of $X$), and edges correspond 
 to equivalent position within a repeated sequence. Note, however, that successive 
@@ -110,12 +111,13 @@ samples of a particular sequence will not be directly linked.
 In order to facilitate the discovery of repeated sections, we modify $R'$ by 
 adding links between adjacent samples $(i, i+1)$ and $(i, i-1)$, resulting in the
 \emph{sequence-augmented graph} $R^+$:
-\begin{equation}
-R^+_{ij} \defeq \begin{cases}
+\begin{eqnarray}
+\Delta_{ij} &\defeq \begin{cases}
 1 & |i - j| = 1\\
-R'_{ij} & \text{otherwise}.
-\end{cases}\label{pathmatrix}
-\end{equation}
+0 & \text{otherwise}
+\end{cases},\\
+R^+_{ij} &\defeq \max(\Delta_{ij}, R'_{ij})\label{pathmatrix}.
+\end{eqnarray}
 With appropriate normalization, $R^+$ can be interpreted as a Markov process
 over samples, where at each step $i$, the process either moves to an adjacent
 sample $i\pm1$, or a random repetition of $i$; a process exemplified by the 
@@ -136,6 +138,41 @@ cross-section links along the first diagonals.
 % matrix $C$, where $C_{i,j}$ indicates that $i$ and $j$ belong to the same structural
 % component (\eg, $i$ and $j$ are both of type \emph{verse}).
 
+
+\subsection{Optimizing the balance}
+While the construction of \cref{pathmatrix} describes the intuition behind combining
+local sequential connections with global repetition structure, it does not explicitly
+model the balance between the two competing goals.  In particular, for long tracks
+with many repetitions, the local connectivity structure may be washed out by
+recurrence links, thereby obscuring the sequence structure we hope to reveal.
+
+However, if we allow weights on the edges, then the combination can be parameterized 
+by a weighting parameter $\mu \in [0, 1]$:
+\begin{equation}
+R^\mu \defeq \mu R' + (1 - \mu) \Delta.
+\end{equation}
+
+This raises the question: how should $\mu$ be set?  Returning to the motivating
+example of the random walk process, we opt for a process that on average, tends to
+move in sequence or across (all) repetitions with equal probability.  In terms of
+$\mu$, this indicates that we should optimize the combination such that the local
+links achieve equivalent weight to the repetition links.  More precisely, for any 
+frame $i$,
+$$
+\mu \sum_j R'_{ij} \approx (1-\mu) \sum_j \Delta_{ij} 
+$$
+Minimizing the average squared error between the two terms above leads to the
+following convex optimization problem:
+\begin{equation}
+\min_{\mu \in [0, 1]} \sum_i {(\mu d_i(R') + (1 - \mu)d_i(\Delta))}^2,\label{optweight}
+\end{equation}
+where $d_i(A) \defeq \sum_j A_{ij}$ indicates the degree (sum of incident edge-weights) 
+of $i$ in $A$. By treating ${[d_i(\cdot)]}_{i=1}^n$ as vectors in $\R^n_+$, we
+obtain the solution to \cref{optweight} in closed form as
+\begin{equation}
+\mu^* = \frac{\langle d(\Delta), d(R') + d(\Delta)\rangle}{\|d(R') +
+d(\Delta)\|^2}.\label{optweight:solution}
+\end{equation}
 
 \subsection{Edge weighting}
 
