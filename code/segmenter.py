@@ -43,8 +43,7 @@ N_MELS = 128
 N_MFCC = 13
 
 # Which similarity metric to use?
-# METRIC='sqeuclidean'
-METRIC='cosine'
+METRIC='sqeuclidean'
 
 # Sample rate for signal analysis
 SR=22050
