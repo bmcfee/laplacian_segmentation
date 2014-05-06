@@ -63,10 +63,20 @@ to apply the proposed method to the task of music segmentation.
 
 \subsection{Related work}
 
+
 \cite{mauch2009using}
+
 
 \cite{serra2012unsupervised}
 
+% kaiser proposed a method to combine input features for novelty detection
+% our method is different: we optimally combine local timbre information with global
+% harmonic repetition
+\cite{kaiser2013simple}
+
+% grohganz used spectral analysis of self-similarity to detect diagonals
+% but our approach is more direct, analyzes the diffusion process rather than the
+% graph itself
 \cite{grohganz2013converting}
 
 \section{Encoding repetition}
@@ -149,7 +159,7 @@ recurrence links, thereby obscuring the sequence structure we hope to reveal.
 However, if we allow weights on the edges, then the combination can be parameterized 
 by a weighting parameter $\mu \in [0, 1]$:
 \begin{equation}
-R^\mu \defeq \mu R' + (1 - \mu) \Delta.
+R^\mu \defeq \mu R' + (1 - \mu) \Delta. \label{weightedsum}
 \end{equation}
 
 This raises the question: how should $\mu$ be set?  Returning to the motivating
@@ -164,28 +174,62 @@ $$
 Minimizing the average squared error between the two terms above leads to the
 following convex optimization problem:
 \begin{equation}
-\min_{\mu \in [0, 1]} \sum_i {(\mu d_i(R') - (1 - \mu)d_i(\Delta))}^2,\label{optweight}
+\min_{\mu \in [0, 1]} \frac{1}{2} \sum_i {(\mu d_i(R') - (1 - \mu)d_i(\Delta))}^2,\label{optweight}
 \end{equation}
 where $d_i(A) \defeq \sum_j A_{ij}$ indicates the degree (sum of incident edge-weights) 
-of $i$ in $A$. By treating ${[d_i(\cdot)]}_{i=1}^n$ as vectors in $\R^n_+$, we
-obtain the solution to \cref{optweight} in closed form as
+of $i$ in $A$. By treating $d(\cdot) \defeq {[d_i(\cdot)]}_{i=1}^n$ a vector in 
+$\R^n_+$, we obtain the solution to \cref{optweight} in closed form as
 \begin{equation}
 \mu^* = \frac{\langle d(\Delta), d(R') + d(\Delta)\rangle}{\|d(R') +
 d(\Delta)\|^2}.\label{optweight:solution}
 \end{equation}
+Note that because $\Delta$ is fully connected, $\|d(\Delta)\|^2 > 0$, which implies
+$\mu^* > 0$.  Consequently, $R^\mu$ retains the full connectivity structure
+of $R^+$.
 
-\subsection{Edge weighting}
+\subsection{Edge weighting and feature fusion}
+In the construction above, we rely upon a single feature representation $X$ to 
+determine the self-similarity structure, and use constant edge weights for the
+repetition and local edges.  The construction can generalize to support
+feature-weighted edges by replacing $R'$ with a masked similarity matrix:
+\begin{equation}
+R'_{ij} \mapsto R'_{ij} S_{ij},
+\end{equation}
+where $S_{ij}$ denotes a non-negative affinity between frames $i$ and $j$, \eg,
+a Gaussian kernel over feature vectors $x_i, x_j$.
+
+Similarly, $\Delta$ can be replaced with a weighted variant.  However, in doing so,
+care must be taken when selecting the affinity function.  In particular, the same
+features used to detect repetition (typically harmonic in nature) may not work well
+for local comparisons, since we may not expect successive frames to retain
+harmonic similarity.  
+
+Recent work has demonstrated that local timbre differences 
+can provide an effective cue for structural boundary
+detection~\cite{kaiser2013simple}.  This motivates the use of two contrasting feature
+descriptors: harmonic features for detecting long-range repeating forms, and timbral
+features for detecting local consistency.  We assume that these features are
+respectively supplied in the form of affinity matrices $S^\text{rep}$ and
+$S^\text{loc}$.  Combining these affinities with the detected repetition structure and
+optimal weighting, we arrive at the \emph{sequence-augmented affinity matrix} $A$:
+\begin{equation}
+A \defeq \mu \left(R' \odot S^\text{rep}\right) + (1-\mu) \left(\Delta \odot
+S^\text{loc}\right),\label{saam}
+\end{equation}
+where $\odot$ denotes the element-wise product, $R'$ is understood to be
+constructed solely from the repetition affinities $S^\text{rep}$, and $\mu$ is
+optimized by \eqref{optweight:solution} on the weighted affinity matrices.
+
 
 \subsection{Spectral clustering}
 
 The Laplacian is a fundamental tool in the field of spectral graph
 theory, as its spectrum can be used to characterize 
 connectivity among vertices~\cite{chung1997spectral}.  
-Let $A$ denote the adjacency matrix of \cref{pathmatrix}, and define $D$ as the
-diagonal \emph{degree matrix}: $D \defeq \diag(\sum_{j} A_{\cdot, j})$.  The
-\emph{symmetric normalized Laplacian} $L$ is defined as:
+Let $D$ denote the diagonal \emph{degree matrix} of $A$: $D \defeq \diag(d(A))$.  
+The \emph{symmetric normalized Laplacian} $L$ is defined as:
 \begin{equation}
-L \defeq D^{-1/2} (D - A) D^{-1/2}= I - D^{-1/2} A D^{-1/2}.\label{rwlaplacian}
+L \defeq I - D^{-1/2} A D^{-1/2}.\label{symlaplacian}
 \end{equation}
 
 The Laplacian forms the basis of spectral clustering~\cite{von2007tutorial}.  The
@@ -195,42 +239,39 @@ graph, and the corresponding eigenvectors $y_i \in \R^n$ encode membership of ve
 in components.
 
 In the non-ideal case --- as we have with $A$ --- the graph is fully connected, and
-the bottom eigenvector $y_0$ is a constant vector which trivially encodes membership 
-in the graph.  However, in the case of $A$, we expect there to be many components
+the bottom eigenvector $y_0$ trivially encodes membership in the graph.  
+However, in the case of $A$, we expect there to be many components
 with relatively small inter-connectivity, \ie, when one section transitions to the
 next.  These weak connections may be revealed by spectral clustering, \ie, analyzing 
 eigenvectors corresponding to small eigenvalues.
 
 An example of this type of analysis is provided in \Cref{recurrence}.  Although the
 bottom eigenvector is uninformative, the remaining bases clearly encode membership in
-the diagonal regions depicted in the top sub-plots.
+the diagonal regions depicted in the affinity matrix.  The resulting pair-wise frame
+similarities for this example is shown in \Cref{lowrank}, which clearly demonstrates
+the ability of this representation to iteratively reveal nested repeating structure.
 
 To apply spectral clustering, we will apply $k$-means clustering to the bottom $M$ 
 eigenvectors $Y \in \R^{M \times n}$ as features, where $M > 0$ is a specified maximum 
 number of structural components.
 
-% Additional eigenvectors encode nested structures
-% Pick a nice example here.  Maybe nirvana or green day?  Beatles would be fine too.
-
-% Addenda:
-% Fill in non-repeating regions with a planted clique
 \begin{figure*}
 \centering
 \includegraphics[width=\textwidth]{figs/recurrence}
 \caption{Left: the recurrence matrix $R$ for \emph{The Beatles -- Come
-Together}. Center: the sequence-augmented adjacency matrix $A$.
-Right: the first 10 basis features (columns), ordered left-to-right.  The first four columns encode the primary structural components, while subsequent components represent structural
-refinements (individual measures).\label{recurrence}}
+Together}. Center: the sequence-augmented affinity matrix $A$.
+Right: the first 10 basis features (columns), ordered left-to-right.  
+The leading columns encode the primary structural components, while subsequent components represent structural refinements (individual measures).\label{recurrence}}
 \end{figure*}
 
  
 \begin{figure*}
 \centering
 \includegraphics[width=\textwidth]{figs/lowrank}
-\caption{Pairwise frame similarity using the first $5$ components for \emph{The Beatles -- Come Together}.  The first
+\caption{Pairwise frame similarity using the first $10$ components for \emph{The Beatles -- Come Together}.  The first
 (trivial) component ($m=1$) captures the entire song, and the second ($m=2$) separates
-the outro from the rest of the song.  Subsequent refinements separate solo, verses and
-refrains.\label{lowrank}}
+the outro from the rest of the song.  Subsequent refinements separate the solo,
+refrain, verse, and outro, and then refine each component into individual measures.\label{lowrank}}
 \end{figure*}
 
 \section{Algorithms}
@@ -263,13 +304,13 @@ refrains.\label{lowrank}}
 \begin{algorithm}
 \caption{Laplacian structural segmentation\label{lss}}
 \begin{algorithmic}[1]
-\REQUIRE{ Features: $X \in \R^{d\times n}$\\
+\REQUIRE{ Affinities: $S^\text{rep}, S^\text{loc} \in \R_+^{n\times n}$\\
 maximum number of segment types: $M$\\
 bounds on the number of segments: $2 \leq k_\text{min} < k_\text{max}$}
 \ENSURE{Segment boundaries $B$, labels $C$}\\
-{\sc LSS}$(X, k_\text{min}, k_\text{max}$)
-\STATE{$R' \leftarrow $ filtered recurrence matrix of $X$ (\Cref{filtered-rep})}
-\STATE{$A \leftarrow $ sequence-augmented adjacency matrix}
+{\sc LSS}$(S^\text{rep}, S^\text{loc}, k_\text{min}, k_\text{max}$)
+\STATE{$R' \leftarrow $ filtered recurrence matrix of $S^\text{rep}$ (\Cref{filtered-rep})}
+\STATE{$A \leftarrow $ sequence-augmented affinity matrix (\Cref{saam})}
 \STATE{$L \leftarrow I - D^{-1/2} A D^{-1/2}$}
 \STATE{$Y \leftarrow$ bottom $M$ eigenvectors of $L$}
 \STATE{$B \leftarrow \text{\sc CPD}(Y, k_\text{min}, k_\text{max})$}
