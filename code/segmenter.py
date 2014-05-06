@@ -339,7 +339,7 @@ def time_clusterer(Lf, k_min, k_max, times):
     return best_boundaries, labels
 
 def segment_speed(Y):
-    return np.mean(np.abs(np.diff(Y, axis=1))**2)
+    return np.mean(np.sum(np.abs(np.diff(Y, axis=1))**2, axis=0))
 
 def label_clusterer(Lf, k_min, k_max):
     best_score      = -np.inf
