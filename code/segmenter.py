@@ -343,8 +343,8 @@ def segment_speed(Y):
 
 def label_clusterer(Lf, k_min, k_max):
     best_score      = -np.inf
-    best_boundaries = None
-    best_n_types    = None
+    best_boundaries = [0, Lf.shape[1]]
+    best_n_types    = 1
     Y_best          = None
 
     label_dict = {}

@@ -15,5 +15,5 @@ predictor() {
 export -f predictor
 
 parallel -j ${NUM_JOBS} predictor BEATLES_TUT laplacian {1} ::: ../data/features/BEATLES_TUT/*.pickle
-# parallel -j ${NUM_JOBS} predictor SALAMI laplacian {1} ::: ../data/features/SALAMI/*.pickle
+parallel -j ${NUM_JOBS} predictor SALAMI laplacian {1} ::: ../data/features/SALAMI/*.pickle
 
