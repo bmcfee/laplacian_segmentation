@@ -306,9 +306,9 @@ def cond_entropy(y_old, y_new):
 
 def time_clusterer(Lf, k_min, k_max, times):
 
-    best_boundaries = None
-    best_n_types    = None
-    Y_best          = None
+    best_boundaries = [0, Lf.shape[1]]
+    best_n_types    = 1
+    Y_best          = Lf[:1].T
 
     times = np.asarray(times)
 
@@ -326,10 +326,10 @@ def time_clusterer(Lf, k_min, k_max, times):
         segment_deltas = np.diff(times[boundaries])
         
         # Easier to compute this before filling it out
-        feasible = (np.mean(segment_deltas) >= MIN_SEG)
+        feasible = (np.mean(segment_deltas) >= MIN_SEG) and (np.mean(segment_deltas) <= MAX_SEG)
         
         # Edge-case: always take at least 2 segment types
-        if feasible or n_types == 2:
+        if feasible:
             best_boundaries = boundaries
             best_n_types    = n_types
             Y_best          = Y
@@ -478,8 +478,8 @@ def do_segmentation(X, beats, parameters):
     # Get the bottom k eigenvectors of L
     Lf = factorize(L, k=1+MAX_REP)[0]
 
-    boundaries, labels = label_clusterer(Lf, k_min, k_max)
-#     boundaries, labels = time_clusterer(Lf, k_min, k_max, beats)
+#     boundaries, labels = label_clusterer(Lf, k_min, k_max)
+    boundaries, labels = time_clusterer(Lf, k_min, k_max, beats)
 
     # Output lab file
     print '\tsaving output to ', parameters['output_file']

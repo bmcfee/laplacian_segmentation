@@ -222,7 +222,7 @@ $\R^n_+$, we obtain the solution to \cref{optweight} in closed form as
 \mu^* = \frac{\langle d(\Delta), d(R') + d(\Delta)\rangle}{\|d(R') +
 d(\Delta)\|^2}.\label{optweight:solution}
 \end{equation}
-Note that because $\Delta$ is fully connected, $\|d(\Delta)\|^2 > 0$, which implies
+Note that because $\Delta$ is fully connected, $\|d(\Delta)\|^2 > 0$, we have
 $\mu^* > 0$.  Consequently, $R^\mu$ retains the full connectivity structure
 of $R^+$, and remains connected even when $R'$ is empty.
 
@@ -351,8 +351,8 @@ bounds on the number of segments: $2 \leq k_\text{min} < k_\text{max}$}
 \STATE{$A \leftarrow $ sequence-augmented affinity matrix (\Cref{saam})}
 \STATE{$L \leftarrow I - D^{-1/2} A D^{-1/2}$}
 \STATE{$Y \leftarrow$ bottom $M$ eigenvectors of $L$}
-\STATE{$B \leftarrow \text{\sc CPD}(Y, k_\text{min}, k_\text{max})$}
-\COMMENT{\Cref{cpd}}
+\STATE{$B \leftarrow \text{\sc CPD}(Y, k_\text{min}, k_\text{max})$
+\COMMENT{\Cref{cpd}}}
 \STATE{$S_i \leftarrow$ mean of $Y^{m}$ over $[B_i, B_{i+1})$}
 \STATE{Run $k$-means on $S$ with $k=m$}
 \STATE{Let $C_i$ be the cluster containing the $i$th segment}
