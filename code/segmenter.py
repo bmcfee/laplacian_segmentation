@@ -463,7 +463,7 @@ def do_segmentation(X, beats, parameters):
                                             metric=METRIC,
                                             sym=True).astype(np.float32)
     # Generate the repetition kernel
-    A_rep = self_similarity(X_rep, k=k_link)
+    A_rep = self_similarity(Xs, k=k_link)
 
     # And the local path kernel
     A_loc = self_similarity(X_loc, k=k_link)
@@ -501,6 +501,9 @@ def do_segmentation(X, beats, parameters):
         boundaries, labels = fixed_partition(Lf, parameters['num_types'])
     else:
         boundaries, labels = time_clusterer(Lf, k_min, k_max, beats)
+
+    import cPickle as pickle
+    pickle.dump({'X_rep': X_rep, 'X_loc': X_loc, 'A_rep': A_rep, 'A_loc': A_loc, 'T': T, 'L': L, 'Lf': Lf}, open('/home/bmcfee/dump.pickle', 'w'))
 
     # Output lab file
     print '\tsaving output to ', parameters['output_file']
