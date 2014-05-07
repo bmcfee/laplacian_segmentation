@@ -25,7 +25,7 @@ import sklearn.cluster
 import librosa
 
 # Suppress neighbor links within REP_WIDTH beats of the current one
-REP_WIDTH=7
+REP_WIDTH=3
 
 # Only consider repetitions of at least (FILTER_WIDTH-1)/2
 FILTER_WIDTH=1 + 2 * 8
@@ -490,7 +490,6 @@ def do_segmentation(X, beats, parameters):
 #     T = M * local_ridge(A_rep, A_loc)
     T = weighted_ridge(Rf * A_rep, (np.eye(len(A_loc),k=1) + np.eye(len(A_loc),k=-1)) * A_loc)
 #     T = weighted_ridge(Rf, (np.eye(len(A_loc),k=1) + np.eye(len(A_loc),k=-1)))
-
     L = sym_laplacian(T)
 
     # Get the bottom k eigenvectors of L
@@ -501,9 +500,6 @@ def do_segmentation(X, beats, parameters):
         boundaries, labels = fixed_partition(Lf, parameters['num_types'])
     else:
         boundaries, labels = time_clusterer(Lf, k_min, k_max, beats)
-
-    import cPickle as pickle
-    pickle.dump({'X_rep': X_rep, 'X_loc': X_loc, 'A_rep': A_rep, 'A_loc': A_loc, 'T': T, 'L': L, 'Lf': Lf}, open('/home/bmcfee/dump.pickle', 'w'))
 
     # Output lab file
     print '\tsaving output to ', parameters['output_file']
