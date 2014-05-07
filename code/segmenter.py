@@ -379,7 +379,8 @@ def label_clusterer(Lf, k_min, k_max):
         #         score = - scipy.stats.entropy(labels)
 #         score = 0.5 * (c1 + c2)
 #         score = - sklearn.metrics.completeness_score(labels, label_dict[n_types-1])
-        score = - segment_speed(Y.T)
+#         score = - segment_speed(Y.T)
+        score = - sklearn.metrics.adjusted_rand_index(label_dict[n_types-1], labels)
 
         if score > best_score and feasible:
             best_boundaries = boundaries
