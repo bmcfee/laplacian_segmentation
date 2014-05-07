@@ -393,11 +393,11 @@ def label_clusterer(Lf, k_min, k_max):
         # take the harmonic mean
         # negate: we want to minimize s_f across levels
 #         score = - mir_eval.util.f_measure(1-c1, 1-c2)
-        #         score = - scipy.stats.entropy(labels)
+        score = scipy.stats.entropy(labels) / np.log(n_types)
 #         score = 0.5 * (c1 + c2)
 #         score = - sklearn.metrics.completeness_score(labels, label_dict[n_types-1])
 #         score = - segment_speed(Y.T)
-        score = - sklearn.metrics.adjusted_rand_index(label_dict[n_types-1], labels)
+#         score = - sklearn.metrics.adjusted_rand_index(label_dict[n_types-1], labels)
 
         if score > best_score and feasible:
             best_boundaries = boundaries
@@ -500,6 +500,9 @@ def do_segmentation(X, beats, parameters):
         boundaries, labels = fixed_partition(Lf, parameters['num_types'])
     else:
         boundaries, labels = time_clusterer(Lf, k_min, k_max, beats)
+
+    import cPickle as pickle
+    pickle.dump({'R': R, 'S': S, 'Sf': Sf, 'Rf': Rf, 'X_rep': X_rep, 'X_loc': X_loc, 'Xs': Xs, 'A_rep': A_rep, 'A_loc': A_loc, 'T': T, 'L': L, 'Lf': Lf}, open('/home/bmcfee/dump.pickle', 'w'))
 
     # Output lab file
     print '\tsaving output to ', parameters['output_file']
