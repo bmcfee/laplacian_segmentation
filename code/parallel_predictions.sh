@@ -16,6 +16,11 @@ predictor() {
 }
 export -f predictor
 
+# Estimate k
+parallel -j ${NUM_JOBS} predictor BEATLES_TUT laplacian {1} ::: ../data/features/BEATLES_TUT/*.pickle
+parallel -j ${NUM_JOBS} predictor SALAMI laplacian {1} ::: ../data/features/SALAMI/*.pickle
+
+# Fix k
 for data in BEATLES_TUT SALAMI 
     do
         for m in $(seq 2 10)
@@ -24,6 +29,4 @@ for data in BEATLES_TUT SALAMI
             done
     done
 
-# parallel -j ${NUM_JOBS} predictor BEATLES_TUT laplacian {1} ::: ../data/features/BEATLES_TUT/*.pickle
-#parallel -j ${NUM_JOBS} predictor SALAMI laplacian {1} ::: ../data/features/SALAMI/*.pickle
 
