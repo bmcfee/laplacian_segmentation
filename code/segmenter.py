@@ -358,6 +358,18 @@ def fixed_partition(Lf, n_types):
 def segment_speed(Y):
     return np.mean(np.sum(np.abs(np.diff(Y, axis=1))**2, axis=0))
 
+def label_entropy(labels):
+    
+    values = np.unique(labels)
+    hits = np.zeros(len(values))
+    
+    for v in values:
+        hits[v] = np.sum(values == v)
+        
+    hits = hits / hits.sum()
+    
+    return scipy.stats.entropy(labels)
+
 def label_clusterer(Lf, k_min, k_max):
     best_score      = -np.inf
     best_boundaries = [0, Lf.shape[1]]
@@ -369,7 +381,7 @@ def label_clusterer(Lf, k_min, k_max):
     # The trivial solution
     label_dict[1]   = np.zeros(Lf.shape[1])
 
-    for n_types in range(2, 1+len(Lf.shape)):
+    for n_types in range(2, 1+len(Lf)):
         Y = librosa.util.normalize(Lf[:n_types].T, norm=2, axis=1)
 
         # Try to label the data with n_types 
@@ -383,9 +395,9 @@ def label_clusterer(Lf, k_min, k_max):
         boundaries = np.unique(np.concatenate([[0], boundaries, [len(labels)]]))
         
         # boundaries now include start and end markers; n-1 is the number of segments
-        feasible = (len(boundaries) - 1 >= k_min)# and (len(boundaries) + 1 <= k_max)
+        feasible = (len(boundaries) > k_min)
 
-        score = scipy.stats.entropy(labels) / np.log(n_types)
+        score = label_entropy(labels) / np.log(n_types)
 
         if score > best_score and feasible:
             best_boundaries = boundaries
@@ -483,9 +495,6 @@ def do_segmentation(X, beats, parameters):
         boundaries, labels = fixed_partition(Lf, parameters['num_types'])
     else:
         boundaries, labels = label_clusterer(Lf, k_min, k_max)
-
-    import cPickle as pickle
-    pickle.dump({'Lf': Lf}, open('/home/bmcfee/dump.pickle', 'w'))
 
     # Output lab file
     print '\tsaving output to ', parameters['output_file']
