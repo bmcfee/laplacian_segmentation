@@ -326,7 +326,7 @@ def time_clusterer(Lf, k_min, k_max, times):
         segment_deltas = np.diff(times[boundaries])
         
         # Easier to compute this before filling it out
-        feasible = (np.mean(segment_deltas) >= MIN_SEG) and (np.mean(segment_deltas) <= MAX_SEG)
+        feasible = (np.mean(segment_deltas) >= MIN_SEG)# and (np.mean(segment_deltas) <= MAX_SEG)
         
         # Edge-case: always take at least 2 segment types
         if feasible:
