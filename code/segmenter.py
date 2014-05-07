@@ -369,11 +369,11 @@ def label_clusterer(Lf, k_min, k_max):
     # The trivial solution
     label_dict[1]   = np.zeros(Lf.shape[1])
 
-    for n_types in range(2, Lf.shape[0]):
+    for n_types in range(2, 1+len(Lf.shape)):
         Y = librosa.util.normalize(Lf[:n_types].T, norm=2, axis=1)
 
         # Try to label the data with n_types 
-        C = sklearn.cluster.KMeans(n_clusters=n_types, tol=1e-10, n_init=100)
+        C = sklearn.cluster.KMeans(n_clusters=n_types, n_init=100)
         labels = C.fit_predict(Y)
         label_dict[n_types] = labels
 
@@ -382,7 +382,8 @@ def label_clusterer(Lf, k_min, k_max):
 
         boundaries = np.unique(np.concatenate([[0], boundaries, [len(labels)]]))
         
-        feasible = (len(boundaries) + 1 >= k_min)# and (len(boundaries) + 1 <= k_max)
+        # boundaries now include start and end markers; n-1 is the number of segments
+        feasible = (len(boundaries) - 1 >= k_min)# and (len(boundaries) + 1 <= k_max)
 
         score = scipy.stats.entropy(labels) / np.log(n_types)
 
@@ -482,6 +483,9 @@ def do_segmentation(X, beats, parameters):
         boundaries, labels = fixed_partition(Lf, parameters['num_types'])
     else:
         boundaries, labels = label_clusterer(Lf, k_min, k_max)
+
+    import cPickle as pickle
+    pickle.dump({'Lf': Lf}, open('/home/bmcfee/dump.pickle', 'w'))
 
     # Output lab file
     print '\tsaving output to ', parameters['output_file']
