@@ -20,7 +20,7 @@ for data in BEATLES_TUT SALAMI
     do
         for m in $(seq 2 10)
             do
-                parallel -j ${NUM_JOBS} predictor $data laplacian_$m {1} ::: ../data/features/$data/*.pickle
+                parallel -j ${NUM_JOBS} predictor $data laplacian_$m {1} -m $m ::: ../data/features/$data/*.pickle
             done
     done
 
