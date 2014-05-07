@@ -384,20 +384,7 @@ def label_clusterer(Lf, k_min, k_max):
         
         feasible = (len(boundaries) + 1 >= k_min)# and (len(boundaries) + 1 <= k_max)
 
-        # Compute the conditional entropy scores: 
-        #   can we predict this labeling from the previous one?
-#         c1 = cond_entropy(labels, label_dict[n_types-1]) / np.log(n_types + 1e-12)
-        #   or vice versa?
-#         c2 = cond_entropy(label_dict[n_types-1], labels) / np.log(n_types-1 + 1e-12)
-
-        # take the harmonic mean
-        # negate: we want to minimize s_f across levels
-#         score = - mir_eval.util.f_measure(1-c1, 1-c2)
         score = scipy.stats.entropy(labels) / np.log(n_types)
-#         score = 0.5 * (c1 + c2)
-#         score = - sklearn.metrics.completeness_score(labels, label_dict[n_types-1])
-#         score = - segment_speed(Y.T)
-#         score = - sklearn.metrics.adjusted_rand_index(label_dict[n_types-1], labels)
 
         if score > best_score and feasible:
             best_boundaries = boundaries
@@ -484,25 +471,17 @@ def do_segmentation(X, beats, parameters):
 
     # We can jump to a random neighbor, or +- 1 step in time
     # Call it the infinite jukebox matrix
-#     M = np.maximum(Rf, (np.eye(Rf.shape[0], k=1) + np.eye(Rf.shape[0], k=-1)))
-    
-    # Get the random walk graph laplacian
-#     T = M * local_ridge(A_rep, A_loc)
     T = weighted_ridge(Rf * A_rep, (np.eye(len(A_loc),k=1) + np.eye(len(A_loc),k=-1)) * A_loc)
-#     T = weighted_ridge(Rf, (np.eye(len(A_loc),k=1) + np.eye(len(A_loc),k=-1)))
+    # Get the graph laplacian
     L = sym_laplacian(T)
 
     # Get the bottom k eigenvectors of L
     Lf = factorize(L, k=1+MAX_REP)[0]
 
-#     boundaries, labels = label_clusterer(Lf, k_min, k_max)
     if parameters['num_types']:
         boundaries, labels = fixed_partition(Lf, parameters['num_types'])
     else:
-        boundaries, labels = time_clusterer(Lf, k_min, k_max, beats)
-
-    import cPickle as pickle
-    pickle.dump({'R': R, 'S': S, 'Sf': Sf, 'Rf': Rf, 'X_rep': X_rep, 'X_loc': X_loc, 'Xs': Xs, 'A_rep': A_rep, 'A_loc': A_loc, 'T': T, 'L': L, 'Lf': Lf}, open('/home/bmcfee/dump.pickle', 'w'))
+        boundaries, labels = label_clusterer(Lf, k_min, k_max)
 
     # Output lab file
     print '\tsaving output to ', parameters['output_file']
