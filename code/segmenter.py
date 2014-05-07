@@ -338,6 +338,23 @@ def time_clusterer(Lf, k_min, k_max, times):
     
     return best_boundaries, labels
 
+def fixed_partition(Lf, n_types):
+
+    # Build the affinity matrix on the first n_types-1 repetition features
+    Y = librosa.util.normalize(Lf[:n_types].T, norm=2, axis=1)
+
+    # Try to label the data with n_types 
+    C = sklearn.cluster.KMeans(n_clusters=n_types, tol=1e-10, n_init=100)
+    labels = C.fit_predict(Y)
+        
+    boundaries = 1 + np.asarray(np.where(labels[:-1] != labels[1:])).reshape((-1,))
+        
+    boundaries = np.unique(np.concatenate([[0], boundaries, [len(labels)]]))
+
+    intervals, labels = label_rep_sections(Y.T, boundaries, n_types)
+    
+    return boundaries, labels
+
 def segment_speed(Y):
     return np.mean(np.sum(np.abs(np.diff(Y, axis=1))**2, axis=0))
 
@@ -480,7 +497,10 @@ def do_segmentation(X, beats, parameters):
     Lf = factorize(L, k=1+MAX_REP)[0]
 
 #     boundaries, labels = label_clusterer(Lf, k_min, k_max)
-    boundaries, labels = time_clusterer(Lf, k_min, k_max, beats)
+    if parameters['num_types']:
+        boundaries, labels = fixed_partition(Lf, parameters['num_types'])
+    else:
+        boundaries, labels = time_clusterer(Lf, k_min, k_max, beats)
 
     # Output lab file
     print '\tsaving output to ', parameters['output_file']
@@ -494,6 +514,13 @@ def process_arguments():
                             action  =   'store_true',
                             default =   False,
                             help    =   'verbose output')
+
+    parser.add_argument(    '-m', '--num-types',
+                            dest    =   'num_types',
+                            action  =   'store',
+                            type    =   int,
+                            default =   None,
+                            help    =   'Number of segment types.  Leave blank to auto-detect.')
 
     parser.add_argument(    'input_song',
                             action  =   'store',
