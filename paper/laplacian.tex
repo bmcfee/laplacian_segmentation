@@ -259,12 +259,16 @@ constructed solely from the repetition affinities $S^\text{rep}$, and $\mu$ is
 optimized by \eqref{optweight:solution} on the weighted affinity matrices.
 
 
-\subsection{Spectral clustering}
+\section{Algorithms}
 
 The Laplacian is a fundamental tool in the field of spectral graph
 theory, as can be interpreted as a discrete analog of a diffusion operator over the
 vertices of the graph, and its spectrum can be used to characterize 
-vertex connectivity~\cite{chung1997spectral}.  
+vertex connectivity~\cite{chung1997spectral}.  In this section, we describe in detail
+how spectral clustering can be used to analyze the repetition graph constructed in the
+previous section.
+
+\subsection{Background: spectral clustering}
 Let $D$ denote the diagonal \emph{degree matrix} of $A$: $D \defeq \diag(d(A))$.  
 The \emph{symmetric normalized Laplacian} $L$ is defined as:
 \begin{equation}
@@ -278,23 +282,21 @@ eigenvalue $\lambda_0 = 0$ corresponds to the number of connected components in 
 graph, and the corresponding eigenvectors $y_i \in \R^n$ encode membership of vertices
 in components.
 
-In the non-ideal case --- as we have with $A$ --- the graph is fully connected, and
-the bottom eigenvector $y_0$ trivially encodes membership in the graph. 
+In the non-ideal case --- as we have with $A$ --- the graph is fully connected, so
+$\lambda_0$ has multiplicity 1, and the bottom eigenvector $y_0$ trivially encodes 
+membership in the graph. 
 However, in the case of $A$, we expect there to be many components
 with high intra-connectivity and relatively small inter-connectivity, \ie, when 
 one section transitions to the next.  
 These weak connections may be revealed by spectral clustering, \ie, analyzing 
 eigenvectors corresponding to small eigenvalues.
 
-An example of this type of analysis is depicted in \Cref{recurrence}.  Although the
-first eigenvector is uninformative, the remaining bases clearly encode membership in
-the diagonal regions depicted in the affinity matrix.  The resulting pair-wise frame
+\Cref{recurrence} illustrates an example of the encoding produced by spectral
+decomposition of $L$.  Although the first eigenvector (column) is uninformative, 
+the remaining bases clearly encode membership in the diagonal regions depicted in the 
+affinity matrix.  The resulting pair-wise frame
 similarities for this example is shown in \Cref{lowrank}, which clearly demonstrates
 the ability of this representation to iteratively reveal nested repeating structure.
-
-To apply spectral clustering, we will apply $k$-means clustering to the (normalized) 
-bottom $M$ eigenvectors $Y \in \R^{M \times n}$ as features, where $M > 0$ is a 
-specified maximum number of structural components.
 
 \begin{figure*}
 \centering
@@ -315,30 +317,33 @@ the outro from the rest of the song.  Subsequent refinements separate the solo,
 refrain, verse, and outro, and then refine each component into individual measures.\label{lowrank}}
 \end{figure*}
 
-% \section{Algorithms}
+To apply spectral clustering, we will apply $k$-means clustering to the (normalized) 
+bottom $M$ eigenvectors $Y \in \R^{M \times n}$ as features, where $M > 0$ is a 
+specified maximum number of structural components.  By varying the number of
+components $M$ --- equivalently, the dimension of the representation --- we can
+directly adjust the resolution of the resulting segmentation.
 
-% \subsection{Change-point detection}
 
-% \begin{algorithm}
-% \caption{Change-point detection\label{cpd}}
-% \begin{algorithmic}[1]
-% \REQUIRE{Repetition features $Y \in \R^{M \times n}$, $2 \leq k_\text{min}$}
-% \ENSURE{Boundaries $B^*$, number of segment labels $m^*$}\\
-% {\sc CPD}$(Y, k_\text{min}, k_\text{max})$
-%     \STATE{$B^* \leftarrow \emptyset$}
-%     \FOR{$m \leftarrow 1, 2, \ldots, M$}
-%         \STATE{Let $\hat{y}_t \leftarrow Y_{1:m, t} / \|Y_{1:m, t}\|^2$}\\
-%         \COMMENT{Truncate and normalize the columns of $Y$}
-%         \STATE{Run $k$-means on $\{\hat{y}_t\}_{i=1}^n$ with $k=m$}
-%         \STATE{Let $c_t$ be the cluster containing $\hat{y}_t$}
-%         \STATE{$B \leftarrow \{t \given c_t \neq c_{t+1}\}$}
-%         \IF{$B^* = \emptyset$ or $k_\text{min} \leq |B| + 1 \leq k_\text{max}$} 
-%         \STATE{$B^* \leftarrow B, \quad m^* \leftarrow m$}
-%         \ENDIF
-%     \ENDFOR
-%     \RETURN{$B^*, m^*$}
-% \end{algorithmic}
-% \end{algorithm}
+\subsection{Boundary detection}
+For a fixed number of segment types $m$, segment boundaries can estimated 
+by clustering the columns of $Y$ after truncating to the first $m$ dimensions.
+After clustering, segment boundaries are detected by searching for change-points in
+the cluster assignments of $Y_{\cdot,t}$ and $Y_{\cdot,t+1}$.  This method is
+formalized in \cref{bd}.
+
+\begin{algorithm}
+\caption{Boundary detection\label{bd}}
+\begin{algorithmic}[1]
+\REQUIRE{Repetition features $Y \in \R^{m \times n}$, }
+\ENSURE{Boundaries $B^*$}\\
+{\sc BD}$(Y)$
+    \STATE{Let $\hat{y}_t \leftarrow Y_{\cdot, t} / \|Y_{\cdot, t}\|$}\\
+    \COMMENT{Truncate and normalize the columns of $Y$}
+    \STATE{Run $k$-means on $\{\hat{y}_t\}_{i=1}^n$ with $k=m$}
+    \STATE{Let $c_t$ be the cluster containing $\hat{y}_t$}
+    \RETURN{$B \defeq \{t \given c_t \neq c_{t+1}\}$} 
+\end{algorithmic}
+\end{algorithm}
 
 \subsection{Laplacian structural decomposition}
 
@@ -347,15 +352,14 @@ refrain, verse, and outro, and then refine each component into individual measur
 \begin{algorithmic}[1]
 \REQUIRE{ Affinities: $S^\text{rep}, S^\text{loc} \in \R_+^{n\times n}$\\
 maximum number of segment types: $M$\\
-bounds on the number of segments: $2 \leq k_\text{min} < k_\text{max}$}
+bounds on the number of segments: $2 \leq k_\text{min}$}
 \ENSURE{Segment boundaries $B$, labels $C$}\\
 {\sc LSD}$(S^\text{rep}, S^\text{loc}, k_\text{min}, k_\text{max}$)
 \STATE{$R' \leftarrow $ filtered recurrence matrix of $S^\text{rep}$ (\Cref{filtered-rep})}
 \STATE{$A \leftarrow $ sequence-augmented affinity matrix (\Cref{saam})}
 \STATE{$L \leftarrow I - D^{-1/2} A D^{-1/2}$}
 \STATE{$Y \leftarrow$ bottom $M$ eigenvectors of $L$}
-\STATE{$B \leftarrow \text{\sc CPD}(Y, k_\text{min}, k_\text{max})$
-\COMMENT{\Cref{cpd}}}
+\STATE{$B \leftarrow \text{\sc BD}(Y, k_\text{min})$ (\Cref{bd})}
 \STATE{$S_i \leftarrow$ mean of $Y^{m}$ over $[B_i, B_{i+1})$}
 \STATE{Run $k$-means on $S$ with $k=m$}
 \STATE{Let $C_i$ be the cluster containing the $i$th segment}
