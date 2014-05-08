@@ -335,17 +335,21 @@ formalized in \cref{bd}.
 \caption{Boundary detection\label{bd}}
 \begin{algorithmic}[1]
 \REQUIRE{Repetition features $Y \in \R^{m \times n}$, }
-\ENSURE{Boundaries $B^*$}\\
-{\sc BD}$(Y)$
-    \STATE{Let $\hat{y}_t \leftarrow Y_{\cdot, t} / \|Y_{\cdot, t}\|$}\\
-    \COMMENT{Truncate and normalize the columns of $Y$}
+\ENSURE{Boundaries $B^*$, frame-level segment labels $c$}\\
+{\sc Boundary-Detect}$(Y)$
+    \STATE{$\hat{y}_t \leftarrow Y_{\cdot, t} / \|Y_{\cdot, t}\|$}
+    \COMMENT{Normalize columns $Y_{\cdot,t}$}
     \STATE{Run $k$-means on $\{\hat{y}_t\}_{i=1}^n$ with $k=m$}
     \STATE{Let $c_t$ be the cluster containing $\hat{y}_t$}
-    \RETURN{$B \defeq \{t \given c_t \neq c_{t+1}\}$} 
+    \STATE{$B \leftarrow \{t \given c_t \neq c_{t+1}\}$} 
+    \RETURN{$(B, c)$}
 \end{algorithmic}
 \end{algorithm}
 
+
 \subsection{Laplacian structural decomposition}
+
+
 
 \begin{algorithm}
 \caption{Laplacian structural decomposition\label{lss}}
@@ -359,7 +363,7 @@ bounds on the number of segments: $2 \leq k_\text{min}$}
 \STATE{$A \leftarrow $ sequence-augmented affinity matrix (\Cref{saam})}
 \STATE{$L \leftarrow I - D^{-1/2} A D^{-1/2}$}
 \STATE{$Y \leftarrow$ bottom $M$ eigenvectors of $L$}
-\STATE{$B \leftarrow \text{\sc BD}(Y, k_\text{min})$ (\Cref{bd})}
+\STATE{$B \leftarrow \text{\sc Boundary-Detect}(Y)$ (\Cref{bd})}
 \STATE{$S_i \leftarrow$ mean of $Y^{m}$ over $[B_i, B_{i+1})$}
 \STATE{Run $k$-means on $S$ with $k=m$}
 \STATE{Let $C_i$ be the cluster containing the $i$th segment}
