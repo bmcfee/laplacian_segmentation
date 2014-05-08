@@ -6,6 +6,7 @@
 \documentclass{article}
 \usepackage{ismir2014,amsmath,cite}
 \usepackage{graphicx}
+% \usepackage{hyperref}
 \usepackage{brian}
 
 % Title.
@@ -111,12 +112,16 @@ of long-range tonal repetitions.
 % grohganz used spectral analysis of self-similarity to detect diagonals
 % but our approach is more direct, analyzes the diffusion process rather than the
 % graph itself
-Our general idea is most similar to that of Grohganz \etal~\cite{grohganz2013converting},
-in which diagonal bands of a self-similarity matrix are expanded into block structures
-by spectral analysis.  Their method analyzed the spectral decomposition of the 
+Our general approach is similar in spirit to that of Grohganz 
+\etal~\cite{grohganz2013converting}, in which diagonal bands 
+of a self-similarity matrix are expanded into block structures by 
+spectral analysis.  Their method analyzed the spectral decomposition of the 
 self-similarity matrix directly, whereas the method proposed here operates on the
-graph Laplacian.  As we will demonstrate, the Laplacian provides a direct means to
-expose block structure.
+graph Laplacian.  Similarly, Kaiser and Sikora applied non-negative matrix
+factorization directly to a self-similarity matrix in order to detect blocks of
+repeating elements~\cite{kaiser2010music}.  
+As we will demonstrate, the Laplacian provides a more direct means to
+expose block structure at multiple levels of detail.
 
 \section{Encoding repeated structure}
 % Begin with nearest-neighbor linkage in some feature space
@@ -286,17 +291,16 @@ In the non-ideal case --- as we have with $A$ --- the graph is fully connected, 
 $\lambda_0$ has multiplicity 1, and the bottom eigenvector $y_0$ trivially encodes 
 membership in the graph. 
 However, in the case of $A$, we expect there to be many components
-with high intra-connectivity and relatively small inter-connectivity, \ie, when 
-one section transitions to the next.  
-These weak connections may be revealed by spectral clustering, \ie, analyzing 
-eigenvectors corresponding to small eigenvalues.
+with high intra-connectivity and relatively small inter-connectivity, \eg, at the
+transition point between sections.
 
 \Cref{recurrence} illustrates an example of the encoding produced by spectral
 decomposition of $L$.  Although the first eigenvector (column) is uninformative, 
 the remaining bases clearly encode membership in the diagonal regions depicted in the 
-affinity matrix.  The resulting pair-wise frame
-similarities for this example is shown in \Cref{lowrank}, which clearly demonstrates
-the ability of this representation to iteratively reveal nested repeating structure.
+affinity matrix.  
+The resulting pair-wise frame similarities for this example is shown in \Cref{lowrank}, 
+which clearly demonstrates the ability of this representation to iteratively reveal 
+nested repeating structure.
 
 \begin{figure*}
 \centering
@@ -305,21 +309,21 @@ the ability of this representation to iteratively reveal nested repeating struct
 Together}. Center: the sequence-augmented affinity matrix $A$.
 Right: the first 10 basis features (columns), ordered left-to-right.  
 The leading columns encode the primary structural components, while subsequent
-components represent structural refinements, down to individual measures.\label{recurrence}}
+components represent structural refinements.\label{recurrence}}
 \end{figure*}
 
  
 \begin{figure*}
 \centering
 \includegraphics[width=\textwidth]{figs/lowrank}
-\caption{Pairwise frame similarity using the first $10$ components for \emph{The Beatles -- Come Together}.  The first
+\caption{Pair-wise frame similarity using the first $10$ components for \emph{The Beatles -- Come Together}.  The first
 (trivial) component ($m=1$) captures the entire song, and the second ($m=2$) separates
 the outro from the rest of the song.  Subsequent refinements separate the solo,
 refrain, verse, and outro, and then refine each component into individual measures.\label{lowrank}}
 \end{figure*}
 
 To apply spectral clustering, we will apply $k$-means clustering to the (normalized) 
-bottom $M$ eigenvectors $Y \in \R^{M \times n}$ as features, where $M > 0$ is a 
+eigenvectors $Y \in \R^{n \times n}$ as features, where $M > 0$ is a 
 specified maximum number of structural components.  By varying the number of
 components $M$ --- equivalently, the dimension of the representation --- we can
 directly adjust the resolution of the resulting segmentation.
@@ -350,10 +354,41 @@ formalized in \Cref{bd}.
 
 \subsection{Laplacian structural decomposition}
 
+To decompose an input song into its structural components, we propose a method, listed
+as \Cref{lsd},
+to find boundaries and structural annotations at multiple levels of structural
+complexity.  This operates by first computing the Laplacian as described above, and
+then iteratively increasing the set of eigenvectors for use in \Cref{bd}.  For $m=2$,
+the first two eigenvectors --- corresponding to the two smallest eigenvalues of $L$
+--- are taken.  In general, for $m$ types of repeating component, the bottom $m$
+eigenvectors are used to label frames and detect boundaries.  The result is a sequence
+of boundaries $B^m$ and frame labels $C^m$, for values $m \in 2, 3, \dots, M$.
+
+Note that unlike most prior structural analysis algorithms, \Cref{lsd} does not produce a
+single decomposition of the song, but rather a sequence of iteratively more complex 
+decompositions.  This property can be valuable in visualization applications,
+where a user may be interested in the relationship between structural components at
+multiple levels.  Similarly, in interactive display applications, a user may wish to 
+request more or less detailed analyses for a track.  Since complexity is controlled by
+a single, discrete parameter $M$, this application is readily supported with a minimal
+set of interface controls (\eg, a slider).
+
+However, for standardized evaluation, the method must produce a single, flat
+segmentation of the track.  Adaptively estimating the appropriate level of analysis in
+this context is somewhat ill-posed, as different use-cases require different amounts of 
+detail.  Here, we apply a simple selection criterion, based on the level of detail
+commonly observed in standard datasets~\cite{harte2010towards,smith2011design}.  
+First, we reduce the set of candidates to those in which the mean segment duration is 
+at least some minimal threshold, in our case, 10 seconds.  
+Subject to this constraint, we select the segmentation level $\tilde{m}$ whose 
+frame-level annotations exhibit maximum entropy, thereby preferring solutions with 
+approximately balanced distributions over the set of segment types.
+
+
 
 
 \begin{algorithm}
-\caption{Laplacian structural decomposition\label{lss}}
+\caption{Laplacian structural decomposition\label{lsd}}
 \begin{algorithmic}[1]
 \REQUIRE{ Affinities: $S^\text{rep}, S^\text{loc} \in \R_+^{n\times n}$\\
 maximum number of segment types: $M$}
@@ -366,7 +401,7 @@ maximum number of segment types: $M$}
     \STATE{$Y \leftarrow$ bottom $m$ eigenvectors of $L$}
     \STATE{$(B^m, C^m) \leftarrow \text{\sc Boundary-Detect}(Y)$}
 \ENDFOR{}
-\RETURN{$(B^m, C^m)_{m=2}^M$}
+\RETURN{$\{(B^m, C^m)\}_{m=2}^M$}
 \end{algorithmic}
 \end{algorithm}
 
@@ -376,14 +411,59 @@ maximum number of segment types: $M$}
 % return boundary times and segment labels
 
 \section{Experiments}
+To evaluate the proposed method quantitatively, we compare boundary detection and
+structural annotation performance on two standard datasets.  We evaluate the
+performance of the method using the automatic complexity estimation described above,
+as well as performance achieved for each fixed value of $m$ across the dataset.
 
-\subsection{Data}
+Finally, to evaluate the impact of the complexity estimation method, we compare to an
+oracle model. For each track, a different $m^*$ is selected to maximize the
+evaluation metric of interest.  This can be viewed as a simulation of interactive
+visualization, in which the user has the freedom to dynamically adapt the level of
+detail until she is satisfied.  Results in this setting may be interpreted as
+measuring the best possible segmentation within the set of predictions made by
+\Cref{lsd}.
 
-\subsection{Implementation}
+\subsection{Data and evaluation}
+Our data is comprised of two sources:
+\begin{description}
+\item[Beatles-TUT:\footnote{\texttt{http://www.cs.tut.fi/sgn/arg/paulus/structure.html}}]
+174 structurally annotated tracks from the Beatles corpus.  In this set, a single
+annotation is provided for each track, and annotations generally correspond to
+functional components (\eg, \emph{verse}, \emph{refrain}, or \emph{solo}).
+\item[SALAMI:] 735 tracks from the SALAMI corpus~\cite{smith2011design}.  This corpus
+spans a much wider range of genres and instrumentation, and provides multiple
+annotation levels for each track, ranging from small-scale segments to large
+functional components as in the Beatles.
+\end{description}
+
+In each evaluation, we report the $F$-measure of boundary detection at 0.5-second and
+3-second windows, as well as pair-wise $F$-measure for frame
+classification~\cite{levy2008structural}.  For comparison purposes, we also report
+scores achieved by the method of Serr\`{a} \etal~\cite{serra2014unsupervised}.
+
+\subsection{Implementation details}
+All input signals are sampled at 22050Hz, and analyzed with a 2048-sample FFT window
+and 512-sample hop.  Repetition similarity matrices $S^\text{rep}$ were 
+computed by first extracting log-power constant-Q transforms from $C2$ (32.7Hz) to
+$C8$ (2093.0Hz), using a down-sampling method 
+similar to that of Sch{\"or}rkhuber and Klapuri~\cite{schorkhuber2010constant}.  CQT
+frames are mean-aggregated between detected beat events, and stacked using time-delay
+embedding with one step of history.
+Similarity matrices were the computed by applying a Gaussian kernel
+$S^\text{rep}_{ij} \defeq \exp\left(-\frac{1}{2\sigma^2}\|x_i - x_j\|^2\right)$ to 
+each pair of beat-synchronous frames $i$ and $j$.
+The bandwidth was estimated by computing the average squared distance between each
+$x_i$ and its $k$th nearest neighbor, and $k$ was set to $1 + \lceil 2\log_2 n\rceil$.
+Local timbre similarity $S^\text{loc}$ was computed by extracting the first 13 Mel
+frequency cepstral coefficients (MFCC), mean-aggregating between detected beats, and
+then applying a Gaussian kernel as done for $S^\text{rep}$.
+\footnote{All methods were implemented in Python, and source code will be made freely available
+upon publication.}
 
 \subsection{Results}
 
-\section{Discussion}
+\section{Conclusion}
 
 \bibliography{refs}
 
