@@ -304,7 +304,8 @@ the ability of this representation to iteratively reveal nested repeating struct
 \caption{Left: the recurrence matrix $R$ for \emph{The Beatles -- Come
 Together}. Center: the sequence-augmented affinity matrix $A$.
 Right: the first 10 basis features (columns), ordered left-to-right.  
-The leading columns encode the primary structural components, while subsequent components represent structural refinements (individual measures).\label{recurrence}}
+The leading columns encode the primary structural components, while subsequent
+components represent structural refinements, down to individual measures.\label{recurrence}}
 \end{figure*}
 
  
@@ -335,14 +336,14 @@ formalized in \cref{bd}.
 \caption{Boundary detection\label{bd}}
 \begin{algorithmic}[1]
 \REQUIRE{Repetition features $Y \in \R^{m \times n}$, }
-\ENSURE{Boundaries $B^*$, frame-level segment labels $c$}\\
+\ENSURE{Boundaries $b$, frame-level segment labels $c$}\\
 {\sc Boundary-Detect}$(Y)$
     \STATE{$\hat{y}_t \leftarrow Y_{\cdot, t} / \|Y_{\cdot, t}\|$}
     \COMMENT{Normalize columns $Y_{\cdot,t}$}
     \STATE{Run $k$-means on $\{\hat{y}_t\}_{i=1}^n$ with $k=m$}
     \STATE{Let $c_t$ be the cluster containing $\hat{y}_t$}
-    \STATE{$B \leftarrow \{t \given c_t \neq c_{t+1}\}$} 
-    \RETURN{$(B, c)$}
+    \STATE{$b \leftarrow \{t \given c_t \neq c_{t+1}\}$} 
+    \RETURN{$(b, c)$}
 \end{algorithmic}
 \end{algorithm}
 
@@ -355,18 +356,16 @@ formalized in \cref{bd}.
 \caption{Laplacian structural decomposition\label{lss}}
 \begin{algorithmic}[1]
 \REQUIRE{ Affinities: $S^\text{rep}, S^\text{loc} \in \R_+^{n\times n}$\\
-maximum number of segment types: $M$\\
-bounds on the number of segments: $2 \leq k_\text{min}$}
-\ENSURE{Segment boundaries $B$, labels $C$}\\
-{\sc LSD}$(S^\text{rep}, S^\text{loc}, k_\text{min}, k_\text{max}$)
-\STATE{$R' \leftarrow $ filtered recurrence matrix of $S^\text{rep}$ (\Cref{filtered-rep})}
-\STATE{$A \leftarrow $ sequence-augmented affinity matrix (\Cref{saam})}
+maximum number of segment types: $M$}
+\ENSURE{Segment boundaries $B$, frame labels $C$}\\
+{\sc LSD}$(S^\text{rep}, S^\text{loc})$
+\STATE{$R' \leftarrow $ filtered recurrence matrix of $S^\text{rep}$ (\cref{filtered-rep})}
+\STATE{$A \leftarrow $ sequence-augmented affinity matrix (\cref{saam})}
 \STATE{$L \leftarrow I - D^{-1/2} A D^{-1/2}$}
-\STATE{$Y \leftarrow$ bottom $M$ eigenvectors of $L$}
-\STATE{$B \leftarrow \text{\sc Boundary-Detect}(Y)$ (\Cref{bd})}
-\STATE{$S_i \leftarrow$ mean of $Y^{m}$ over $[B_i, B_{i+1})$}
-\STATE{Run $k$-means on $S$ with $k=m$}
-\STATE{Let $C_i$ be the cluster containing the $i$th segment}
+\FOR{$m \in 2, 3, \dots, M$}
+    \STATE{$Y \leftarrow$ bottom $m$ eigenvectors of $L$}
+    \STATE{$(B^m, C^m) \leftarrow \text{\sc Boundary-Detect}(Y)$}
+\ENDFOR{}
 \RETURN{$B, C$}
 \end{algorithmic}
 \end{algorithm}
