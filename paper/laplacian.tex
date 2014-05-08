@@ -222,8 +222,8 @@ $\R^n_+$, we obtain the solution to \cref{optweight} in closed form as
 \mu^* = \frac{\langle d(\Delta), d(R') + d(\Delta)\rangle}{\|d(R') +
 d(\Delta)\|^2}.\label{optweight:solution}
 \end{equation}
-Note that because $\Delta$ is fully connected, $\|d(\Delta)\|^2 > 0$, we have
-$\mu^* > 0$.  Consequently, $R^\mu$ retains the full connectivity structure
+Note that because $\Delta$ is fully connected, we always have $\|d(\Delta)\|^2 > 0$,
+so $\mu^* > 0$.  Consequently, $R^\mu$ retains the full connectivity structure
 of $R^+$, and remains connected even when $R'$ is empty.
 
 \subsection{Edge weighting and feature fusion}
@@ -330,7 +330,7 @@ For a fixed number of segment types $m$, segment boundaries can estimated
 by clustering the columns of $Y$ after truncating to the first $m$ dimensions.
 After clustering, segment boundaries are detected by searching for change-points in
 the cluster assignments of $Y_{\cdot,t}$ and $Y_{\cdot,t+1}$.  This method is
-formalized in \cref{bd}.
+formalized in \Cref{bd}.
 
 \begin{algorithm}
 \caption{Boundary detection\label{bd}}
@@ -357,7 +357,7 @@ formalized in \cref{bd}.
 \begin{algorithmic}[1]
 \REQUIRE{ Affinities: $S^\text{rep}, S^\text{loc} \in \R_+^{n\times n}$\\
 maximum number of segment types: $M$}
-\ENSURE{Segment boundaries $B$, frame labels $C$}\\
+\ENSURE{Segment boundaries $B^m$, frame labels $C^m$ for each $m \in 2\dots M$}\\
 {\sc LSD}$(S^\text{rep}, S^\text{loc})$
 \STATE{$R' \leftarrow $ filtered recurrence matrix of $S^\text{rep}$ (\cref{filtered-rep})}
 \STATE{$A \leftarrow $ sequence-augmented affinity matrix (\cref{saam})}
@@ -366,7 +366,7 @@ maximum number of segment types: $M$}
     \STATE{$Y \leftarrow$ bottom $m$ eigenvectors of $L$}
     \STATE{$(B^m, C^m) \leftarrow \text{\sc Boundary-Detect}(Y)$}
 \ENDFOR{}
-\RETURN{$B, C$}
+\RETURN{$(B^m, C^m)_{m=2}^M$}
 \end{algorithmic}
 \end{algorithm}
 
