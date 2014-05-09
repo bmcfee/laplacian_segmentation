@@ -290,14 +290,14 @@ eigenvalue $\lambda_0 = 0$ corresponds to the number of connected components in 
 graph, and the corresponding eigenvectors $y_i \in \R^n$ encode membership of vertices
 in components.
 
-In the non-ideal case --- as we have with $A$ --- the graph is fully connected, so
+In the non-ideal case, the graph is fully connected, so
 $\lambda_0$ has multiplicity 1, and the bottom eigenvector $y_0$ trivially encodes 
 membership in the graph. 
 However, in the case of $A$, we expect there to be many components
 with high intra-connectivity and relatively small inter-connectivity, \eg, at the
 transition point between sections.  Spectral clustering is well-suited to detecting
-and pruning these weak links, and it can be viewed as an approximation method for solving
-normalized graph cut problems~\cite{von2007tutorial}.
+and pruning these weak links, and it can be viewed as an approximation method for
+finding normalized graph cuts~\cite{von2007tutorial}.
 
 \Cref{recurrence} illustrates an example of the encoding produced by spectral
 decomposition of $L$.  Although the first eigenvector (column) is uninformative, 
@@ -388,7 +388,9 @@ First, we reduce the set of candidates to those in which the mean segment durati
 at least some minimal threshold, in our case, 10 seconds.  
 Subject to this constraint, we select the segmentation level $\tilde{m}$ whose 
 frame-level annotations exhibit maximum entropy, thereby preferring solutions with 
-approximately balanced distributions over the set of segment types.
+approximately balanced distributions over the set of segment types.  Note that the
+number of segment \emph{types} is not the same as the number of \emph{segments},
+because the same type (\eg, a verse) may repeat multiple times throughout the track.
 
 
 
@@ -431,10 +433,10 @@ measuring the best possible segmentation within the set of predictions made by
 \Cref{lsd}.
 
 \subsection{Data and evaluation}
-Our data is comprised of two sources:
+Our evaluation data is comprised of two sources:
 \begin{description}
 \item[Beatles-TUT:\footnote{\texttt{http://www.cs.tut.fi/sgn/arg/paulus/structure.html}}]
-174 structurally annotated tracks from the Beatles corpus.  In this set, a single
+174 structurally annotated tracks from the Beatles corpus.  A single
 annotation is provided for each track, and annotations generally correspond to
 functional components (\eg, \emph{verse}, \emph{refrain}, or \emph{solo}).
 \item[SALAMI:] 735 tracks from the SALAMI corpus~\cite{smith2011design}.  This corpus
@@ -447,8 +449,8 @@ and \emph{small-scale} annotations.
 In each evaluation, we report the $F$-measure of boundary detection at 0.5-second and
 3-second windows.  To evaluate structural annotation accuracy, we report pairwise frame 
 classification $F$-measure~\cite{levy2008structural}.  
-For comparison purposes, we also report scores achieved by the method of 
-Serr\`{a} \etal~\cite{serra2014unsupervised}.
+For comparison purposes, we report scores achieved by the method of 
+Serr\`{a} \etal, denoted here as SMGA~\cite{serra2014unsupervised}.
 
 \subsection{Implementation details}
 All input signals are sampled at 22050Hz (mono), and analyzed with a 2048-sample FFT window
@@ -496,17 +498,18 @@ annotations as compared to Beatles and SALAMI (functional).
 
 To investigate whether a single $m$ could simultaneously optimize multiple evaluation
 metrics for a given track, we plot the confusion matrices for the oracle selections on
-SALAMI (functional) in
-\Cref{mconfusion}.  While there does appear to be a correlation, we observe that the
-best $m$ to optimize $F_3$ is typically larger than those for $F_0.5$ (indicated by
-the mass in the lower triangle of the left plot) or $F_\text{pair}$ (indicated by the
-upper triangle of the right plot).  This corroborates previous observations that even
-within the context of boundary detection, the 0.5-second and 3.0-second metrics
-evaluate qualitatively different objectives~\cite{smith2013meta}.  Consequently, it may be
-beneficial in practice to provide annotations at multiple resolutions, rather than a
-single, fixed resolution.
+SALAMI (functional) in \Cref{mconfusion}.  We observe that the
+$m$ which optimizes $F_3$ is frequently larger than those for $F_0.5$ --- as indicated by
+the mass in the lower triangle of the left plot --- or $F_\text{pair}$  --- as 
+indicated by the upper triangle of the right plot.  
+Although this observation is heavily dependent upon our particular boundary-detection
+strategy, it is corroborated by previous observations that even within the context of 
+boundary detection, the 0.5-second and 3.0-second metrics evaluate qualitatively 
+different  objectives~\cite{smith2013meta}.  Consequently, it may be beneficial in 
+practice to provide annotations at multiple resolutions, rather than a single, fixed 
+resolution.
 
-\begin{table}
+\begin{table}[t]
 \centering
 \caption{ Beatles (TUT)\label{results:beatles}}
 \begin{tabular}{lrrr}
@@ -531,7 +534,7 @@ SMGA    & 0.293 $\pm$ 0.13 & 0.699 $\pm$ 0.16   & 0.715 $\pm$ 0.15\\
 \end{tabular}
 \end{table}
 
-\begin{table}
+\begin{table}[t]
 \centering
 \caption{ SALAMI (Functions)\label{results:salami:func}}
 \begin{tabular}{lrrr}
@@ -582,7 +585,7 @@ SMGA    & 0.224 $\pm$ 0.11 & 0.550 $\pm$ 0.18   & 0.553 $\pm$ 0.15\\
 % \end{table}
 
 
-\begin{table}
+\begin{table}[t]
 \centering
 \caption{ SALAMI (Small)\label{results:salami:small}}
 \begin{tabular}{lrrr}
