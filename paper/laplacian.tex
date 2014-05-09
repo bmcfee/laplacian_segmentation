@@ -439,7 +439,8 @@ functional components (\eg, \emph{verse}, \emph{refrain}, or \emph{solo}).
 \item[SALAMI:] 735 tracks from the SALAMI corpus~\cite{smith2011design}.  This corpus
 spans a wide range of genres and instrumentation, and provides multiple
 annotation levels for each track.  We report results on \emph{functional},
-\emph{large-scale}, and \emph{small-scale} annotations.
+% \emph{large-scale}, 
+and \emph{small-scale} annotations.
 \end{description}
 
 In each evaluation, we report the $F$-measure of boundary detection at 0.5-second and
@@ -472,7 +473,7 @@ then applying a Gaussian kernel as done for $S^\text{rep}$.\footnote{All methods
 
 \subsection{Results}
 The results of the evaluation are listed in
-\Cref{results:beatles,results:salami:func,results:salami:large,results:salami:small}.  For each fixed value
+\Cref{results:beatles,results:salami:func,results:salami:small}.  For each fixed value
 of $m$, the resulting scores are indicated as $L_m$.  $L$ indicates the automatic
 maximum-entropy selector, and $L^*$ indicates the best possible $m$ for each metric
 independently.
@@ -485,8 +486,19 @@ accurate solutions, the automatic selector does not always choose them.
 In the case of SALAMI (small), the automatic selector performs dramatically worse than
 many of the fixed-$m$ methods, which may be explained by the relatively different
 statistics of segment durations and numbers of unique segment types in the small-scale
-annotations as compared to functional annotations in Beatles and SALAMI (func).
+annotations as compared to functional annotations in Beatles and SALAMI (functional).
 
+To investigate whether a single $m$ could simultaneously optimize multiple evaluation
+metrics for a given track, we plot the confusion matrices for the oracle selections on
+SALAMI (functional) in
+\Cref{mconfusion}.  While there does appear to be a correlation, we observe that the
+best $m$ to optimize $F_3$ is typically larger than those for $F_0.5$ (indicated by
+the mass in the lower triangle of the left plot) or $F_\text{pair}$ (indicated by the
+upper triangle of the right plot).  This corroborates previous observations that even
+within the context of boundary detection, the 0.5-second and 3.0-second metrics
+evaluate qualitatively different objectives~\cite{smith2013}.  Consequently, it may be
+beneficial in practice to provide annotations at multiple resolutions, rather than a
+single, fixed resolution.
 
 \begin{table}
 \centering
@@ -538,30 +550,30 @@ SMGA    & 0.224 $\pm$ 0.11 & 0.550 $\pm$ 0.18   & 0.553 $\pm$ 0.15\\
 \end{tabular}
 \end{table}
 
-\begin{table}
-\centering
-\caption{ SALAMI (Large)\label{results:salami:large}}
-\begin{tabular}{lrrr}
-\toprule
-Method & $F_{0.5}$ & $F_3$ & $F_\text{pair}$\\
-\midrule
-$L_2$   & 0.311 $\pm$ 0.12 & 0.371 $\pm$ 0.14   & 0.591 $\pm$ 0.15\\
-$L_3$   & 0.309 $\pm$ 0.12 & 0.415 $\pm$ 0.16   & 0.593 $\pm$ 0.14\\
-$L_4$   & 0.304 $\pm$ 0.12 & 0.444 $\pm$ 0.16   & 0.579 $\pm$ 0.13\\
-$L_5$   & 0.297 $\pm$ 0.12 & 0.455 $\pm$ 0.16   & 0.558 $\pm$ 0.14\\
-$L_6$   & 0.291 $\pm$ 0.12 & 0.465 $\pm$ 0.16   & 0.539 $\pm$ 0.14\\
-$L_7$   & 0.279 $\pm$ 0.11 & 0.457 $\pm$ 0.16   & 0.513 $\pm$ 0.14\\
-$L_8$   & 0.273 $\pm$ 0.11 & 0.451 $\pm$ 0.15   & 0.489 $\pm$ 0.14\\
-$L_9$   & 0.267 $\pm$ 0.11 & 0.448 $\pm$ 0.15   & 0.467 $\pm$ 0.14\\
-$L_{10}$& 0.257 $\pm$ 0.11 & 0.437 $\pm$ 0.15   & 0.444 $\pm$ 0.14\\
-\midrule
-$L$     & 0.303 $\pm$ 0.13 & 0.462 $\pm$ 0.16   & 0.569 $\pm$ 0.15\\
-$L^*$   & 0.401 $\pm$ 0.13 & 0.582 $\pm$ 0.15   & 0.688 $\pm$ 0.14\\
-\midrule
-SMGA    & 0.224 $\pm$ 0.11 & 0.569 $\pm$ 0.18   & 0.607 $\pm$ 0.17\\
-\bottomrule
-\end{tabular}
-\end{table}
+% \begin{table}
+% \centering
+% \caption{ SALAMI (Large)\label{results:salami:large}}
+% \begin{tabular}{lrrr}
+% \toprule
+% Method & $F_{0.5}$ & $F_3$ & $F_\text{pair}$\\
+% \midrule
+% $L_2$   & 0.311 $\pm$ 0.12 & 0.371 $\pm$ 0.14   & 0.591 $\pm$ 0.15\\
+% $L_3$   & 0.309 $\pm$ 0.12 & 0.415 $\pm$ 0.16   & 0.593 $\pm$ 0.14\\
+% $L_4$   & 0.304 $\pm$ 0.12 & 0.444 $\pm$ 0.16   & 0.579 $\pm$ 0.13\\
+% $L_5$   & 0.297 $\pm$ 0.12 & 0.455 $\pm$ 0.16   & 0.558 $\pm$ 0.14\\
+% $L_6$   & 0.291 $\pm$ 0.12 & 0.465 $\pm$ 0.16   & 0.539 $\pm$ 0.14\\
+% $L_7$   & 0.279 $\pm$ 0.11 & 0.457 $\pm$ 0.16   & 0.513 $\pm$ 0.14\\
+% $L_8$   & 0.273 $\pm$ 0.11 & 0.451 $\pm$ 0.15   & 0.489 $\pm$ 0.14\\
+% $L_9$   & 0.267 $\pm$ 0.11 & 0.448 $\pm$ 0.15   & 0.467 $\pm$ 0.14\\
+% $L_{10}$& 0.257 $\pm$ 0.11 & 0.437 $\pm$ 0.15   & 0.444 $\pm$ 0.14\\
+% \midrule
+% $L$     & 0.303 $\pm$ 0.13 & 0.462 $\pm$ 0.16   & 0.569 $\pm$ 0.15\\
+% $L^*$   & 0.401 $\pm$ 0.13 & 0.582 $\pm$ 0.15   & 0.688 $\pm$ 0.14\\
+% \midrule
+% SMGA    & 0.224 $\pm$ 0.11 & 0.569 $\pm$ 0.18   & 0.607 $\pm$ 0.17\\
+% \bottomrule
+% \end{tabular}
+% \end{table}
 
 
 \begin{table}
@@ -589,6 +601,12 @@ SMGA    & 0.173 $\pm$ 0.08 & 0.518 $\pm$ 0.12   & 0.493 $\pm$ 0.16\\
 \end{tabular}
 \end{table}
 
+\begin{figure*}
+\centering
+\includegraphics[width=0.9\textwidth]{figs/mconfusionfunc}
+\caption{Confusion matrices illustrating the oracle selection of $m\in [2, 10]$ for 
+different pairs of metrics on SALAMI (functional).\label{mconfusion}}
+\end{figure*}
 
 \section{Conclusions}
 The experimental results in the previous section demonstrate that the proposed
