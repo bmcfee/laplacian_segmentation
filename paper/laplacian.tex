@@ -7,6 +7,7 @@
 \usepackage{ismir2014,amsmath,cite}
 \usepackage{graphicx}
 % \usepackage{hyperref}
+\usepackage{booktabs}
 \usepackage{brian}
 
 % Title.
@@ -192,8 +193,7 @@ cross-section links along the first diagonals.
 % matrix $C$, where $C_{i,j}$ indicates that $i$ and $j$ belong to the same structural
 % component (\eg, $i$ and $j$ are both of type \emph{verse}).
 
-
-\subsection{Optimizing the balance}
+\subsection{Balancing local and global linkage}
 While the construction of \cref{pathmatrix} describes the intuition behind combining
 local sequential connections with global repetition structure, it does not explicitly
 model the balance between the two competing goals.  In particular, for long tracks
@@ -281,7 +281,10 @@ L \defeq I - D^{-1/2} A D^{-1/2}.\label{symlaplacian}
 \end{equation}
 
 The Laplacian forms the basis of spectral clustering, in which vertices are
-represented in terms of the eigenvectors of $L$~\cite{von2007tutorial}.  
+represented in terms of the eigenvectors of $L$~\cite{von2007tutorial}.  More
+specifically, to cluster a dataset into $m$ clusters, each point $t$ is represented as
+the (normalized) vector of the $t$th coordinates of the first $m$ eigenvectors of $L$,
+corresponding to the $m$ smallest eigenvalues.
 The motivation for its use stems from the observation that the multiplicity of the bottom
 eigenvalue $\lambda_0 = 0$ corresponds to the number of connected components in a
 graph, and the corresponding eigenvectors $y_i \in \R^n$ encode membership of vertices
@@ -292,7 +295,9 @@ $\lambda_0$ has multiplicity 1, and the bottom eigenvector $y_0$ trivially encod
 membership in the graph. 
 However, in the case of $A$, we expect there to be many components
 with high intra-connectivity and relatively small inter-connectivity, \eg, at the
-transition point between sections.
+transition point between sections.  Spectral clustering is well-suited to detecting
+and pruning these weak links, and it can be viewed as an approximation method for solving
+normalized graph cut problems~\cite{von2007tutorial}.
 
 \Cref{recurrence} illustrates an example of the encoding produced by spectral
 decomposition of $L$.  Although the first eigenvector (column) is uninformative, 
@@ -302,7 +307,7 @@ The resulting pair-wise frame similarities for this example is shown in \Cref{lo
 which clearly demonstrates the ability of this representation to iteratively reveal 
 nested repeating structure.
 
-\begin{figure*}
+\begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{figs/recurrence}
 \caption{Left: the recurrence matrix $R$ for \emph{The Beatles -- Come
@@ -313,7 +318,7 @@ components represent structural refinements.\label{recurrence}}
 \end{figure*}
 
  
-\begin{figure*}
+\begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{figs/lowrank}
 \caption{Pair-wise frame similarity using the first $10$ components for \emph{The Beatles -- Come Together}.  The first
@@ -432,38 +437,165 @@ Our data is comprised of two sources:
 annotation is provided for each track, and annotations generally correspond to
 functional components (\eg, \emph{verse}, \emph{refrain}, or \emph{solo}).
 \item[SALAMI:] 735 tracks from the SALAMI corpus~\cite{smith2011design}.  This corpus
-spans a much wider range of genres and instrumentation, and provides multiple
-annotation levels for each track, ranging from small-scale segments to large
-functional components as in the Beatles.
+spans a wide range of genres and instrumentation, and provides multiple
+annotation levels for each track.  We report results on \emph{functional},
+\emph{large-scale}, and \emph{small-scale} annotations.
 \end{description}
 
 In each evaluation, we report the $F$-measure of boundary detection at 0.5-second and
-3-second windows, as well as pair-wise $F$-measure for frame
-classification~\cite{levy2008structural}.  For comparison purposes, we also report
-scores achieved by the method of Serr\`{a} \etal~\cite{serra2014unsupervised}.
+3-second windows.  To evaluate structural annotation accuracy, we report pairwise frame 
+classification $F$-measure~\cite{levy2008structural}.  
+For comparison purposes, we also report scores achieved by the method of 
+Serr\`{a} \etal~\cite{serra2014unsupervised}.
 
 \subsection{Implementation details}
 All input signals are sampled at 22050Hz, and analyzed with a 2048-sample FFT window
 and 512-sample hop.  Repetition similarity matrices $S^\text{rep}$ were 
 computed by first extracting log-power constant-Q transforms from $C2$ (32.7Hz) to
 $C8$ (2093.0Hz), using a down-sampling method 
-similar to that of Sch{\"or}rkhuber and Klapuri~\cite{schorkhuber2010constant}.  CQT
-frames are mean-aggregated between detected beat events, and stacked using time-delay
+similar to that of Sch{\"o}rkhuber and Klapuri~\cite{schorkhuber2010constant}.  
+
+CQT frames were mean-aggregated between detected beat events, and stacked using time-delay
 embedding with one step of history.
-Similarity matrices were the computed by applying a Gaussian kernel
-$S^\text{rep}_{ij} \defeq \exp\left(-\frac{1}{2\sigma^2}\|x_i - x_j\|^2\right)$ to 
-each pair of beat-synchronous frames $i$ and $j$.
-The bandwidth was estimated by computing the average squared distance between each
-$x_i$ and its $k$th nearest neighbor, and $k$ was set to $1 + \lceil 2\log_2 n\rceil$.
+Similarity matrices were then computed by applying a Gaussian kernel
+\[
+S^\text{rep}_{ij} \defeq \exp\left(-\frac{1}{2\sigma^2}\|x_i - x_j\|^2\right)
+\]
+to each pair of beat-synchronous frames $i$ and $j$.
+The bandwidth parameter $\sigma^2$ was estimated by computing the average 
+squared distance between each $x_i$ and its $k$th nearest neighbor, with 
+$k$ set to $1 + \lceil 2\log_2 n\rceil$.
+
 Local timbre similarity $S^\text{loc}$ was computed by extracting the first 13 Mel
 frequency cepstral coefficients (MFCC), mean-aggregating between detected beats, and
-then applying a Gaussian kernel as done for $S^\text{rep}$.
-\footnote{All methods were implemented in Python, and source code will be made freely available
-upon publication.}
+then applying a Gaussian kernel as done for $S^\text{rep}$.\footnote{All methods were implemented in Python, and source code will be made freely available upon publication.}
 
 \subsection{Results}
+The results of the evaluation are listed in
+\Cref{results:beatles,results:salami:func,results:salami:large,results:salami:small}.  For each fixed value
+of $m$, the resulting scores are indicated as $L_m$.  $L$ indicates the automatic
+maximum-entropy selector, and $L^*$ indicates the best possible $m$ for each metric
+independently.
 
-\section{Conclusion}
+As a common trend across all data sets, the automatic $m$-selector often achieves results
+comparable to the best fixed $m$.  However, it is consistently outperformed by the 
+oracle model $L^*$, indicating that although the output of \Cref{lsd} often contains 
+accurate solutions, the automatic selector does not always choose them.
+
+In the case of SALAMI (small), the automatic selector performs dramatically worse than
+many of the fixed-$m$ methods, which may be explained by the relatively different
+statistics of segment durations and numbers of unique segment types in the small-scale
+annotations as compared to functional annotations in Beatles and SALAMI (func).
+
+
+\begin{table}
+\centering
+\caption{ Beatles (TUT)\label{results:beatles}}
+\begin{tabular}{lrrr}
+\toprule
+Method & $F_{0.5}$ & $F_3$ & $F_\text{pair}$\\
+\midrule
+$L_2$   & 0.307 $\pm$ 0.14 & 0.429 $\pm$ 0.18   & 0.576 $\pm$ 0.14\\
+$L_3$   & 0.303 $\pm$ 0.15 & 0.544 $\pm$ 0.17   & 0.611 $\pm$ 0.13\\
+$L_4$   & 0.307 $\pm$ 0.15 & 0.568 $\pm$ 0.17   & 0.616 $\pm$ 0.13\\
+$L_5$   & 0.276 $\pm$ 0.14 & 0.553 $\pm$ 0.15   & 0.587 $\pm$ 0.12\\
+$L_6$   & 0.259 $\pm$ 0.14 & 0.530 $\pm$ 0.15   & 0.556 $\pm$ 0.12\\
+$L_7$   & 0.246 $\pm$ 0.13 & 0.507 $\pm$ 0.14   & 0.523 $\pm$ 0.12\\
+$L_8$   & 0.229 $\pm$ 0.13 & 0.477 $\pm$ 0.15   & 0.495 $\pm$ 0.12\\
+$L_9$   & 0.222 $\pm$ 0.12 & 0.446 $\pm$ 0.14   & 0.468 $\pm$ 0.12\\
+$L_{10}$& 0.214 $\pm$ 0.11 & 0.425 $\pm$ 0.13   & 0.443 $\pm$ 0.12\\
+\midrule
+$L$     & 0.312 $\pm$ 0.15 & 0.579 $\pm$ 0.16   & 0.628 $\pm$ 0.13\\
+$L^*$   & 0.414 $\pm$ 0.14 & 0.684 $\pm$ 0.13   & 0.694 $\pm$ 0.12\\
+\midrule
+SMGA    & 0.293 $\pm$ 0.13 & 0.699 $\pm$ 0.16   & 0.715 $\pm$ 0.15\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}
+\centering
+\caption{ SALAMI (Functions)\label{results:salami:func}}
+\begin{tabular}{lrrr}
+\toprule
+Method & $F_{0.5}$ & $F_3$ & $F_\text{pair}$\\
+\midrule
+$L_2$   & 0.324 $\pm$ 0.13 & 0.383 $\pm$ 0.15   & 0.539 $\pm$ 0.16\\
+$L_3$   & 0.314 $\pm$ 0.13 & 0.417 $\pm$ 0.16   & 0.549 $\pm$ 0.13\\
+$L_4$   & 0.303 $\pm$ 0.12 & 0.439 $\pm$ 0.16   & 0.547 $\pm$ 0.13\\
+$L_5$   & 0.293 $\pm$ 0.12 & 0.444 $\pm$ 0.16   & 0.535 $\pm$ 0.12\\
+$L_6$   & 0.286 $\pm$ 0.12 & 0.452 $\pm$ 0.16   & 0.521 $\pm$ 0.13\\
+$L_7$   & 0.273 $\pm$ 0.11 & 0.442 $\pm$ 0.16   & 0.502 $\pm$ 0.13\\
+$L_8$   & 0.267 $\pm$ 0.12 & 0.437 $\pm$ 0.16   & 0.483 $\pm$ 0.13\\
+$L_9$   & 0.260 $\pm$ 0.11 & 0.443 $\pm$ 0.16   & 0.464 $\pm$ 0.14\\
+$L_{10}$& 0.250 $\pm$ 0.11 & 0.422 $\pm$ 0.16   & 0.445 $\pm$ 0.14\\
+\midrule
+$L$     & 0.304 $\pm$ 0.13 & 0.455 $\pm$ 0.16   & 0.546 $\pm$ 0.14\\
+$L^*$   & 0.406 $\pm$ 0.13 & 0.579 $\pm$ 0.15   & 0.652 $\pm$ 0.13\\
+\midrule
+SMGA    & 0.224 $\pm$ 0.11 & 0.550 $\pm$ 0.18   & 0.553 $\pm$ 0.15\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}
+\centering
+\caption{ SALAMI (Large)\label{results:salami:large}}
+\begin{tabular}{lrrr}
+\toprule
+Method & $F_{0.5}$ & $F_3$ & $F_\text{pair}$\\
+\midrule
+$L_2$   & 0.311 $\pm$ 0.12 & 0.371 $\pm$ 0.14   & 0.591 $\pm$ 0.15\\
+$L_3$   & 0.309 $\pm$ 0.12 & 0.415 $\pm$ 0.16   & 0.593 $\pm$ 0.14\\
+$L_4$   & 0.304 $\pm$ 0.12 & 0.444 $\pm$ 0.16   & 0.579 $\pm$ 0.13\\
+$L_5$   & 0.297 $\pm$ 0.12 & 0.455 $\pm$ 0.16   & 0.558 $\pm$ 0.14\\
+$L_6$   & 0.291 $\pm$ 0.12 & 0.465 $\pm$ 0.16   & 0.539 $\pm$ 0.14\\
+$L_7$   & 0.279 $\pm$ 0.11 & 0.457 $\pm$ 0.16   & 0.513 $\pm$ 0.14\\
+$L_8$   & 0.273 $\pm$ 0.11 & 0.451 $\pm$ 0.15   & 0.489 $\pm$ 0.14\\
+$L_9$   & 0.267 $\pm$ 0.11 & 0.448 $\pm$ 0.15   & 0.467 $\pm$ 0.14\\
+$L_{10}$& 0.257 $\pm$ 0.11 & 0.437 $\pm$ 0.15   & 0.444 $\pm$ 0.14\\
+\midrule
+$L$     & 0.303 $\pm$ 0.13 & 0.462 $\pm$ 0.16   & 0.569 $\pm$ 0.15\\
+$L^*$   & 0.401 $\pm$ 0.13 & 0.582 $\pm$ 0.15   & 0.688 $\pm$ 0.14\\
+\midrule
+SMGA    & 0.224 $\pm$ 0.11 & 0.569 $\pm$ 0.18   & 0.607 $\pm$ 0.17\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\begin{table}
+\centering
+\caption{ SALAMI (Small)\label{results:salami:small}}
+\begin{tabular}{lrrr}
+\toprule
+Method & $F_{0.5}$ & $F_3$ & $F_\text{pair}$\\
+\midrule
+$L_2$   & 0.151 $\pm$ 0.11 & 0.195 $\pm$ 0.13   & 0.451 $\pm$ 0.19\\
+$L_3$   & 0.171 $\pm$ 0.12 & 0.259 $\pm$ 0.16   & 0.459 $\pm$ 0.17\\
+$L_4$   & 0.186 $\pm$ 0.12 & 0.315 $\pm$ 0.17   & 0.461 $\pm$ 0.15\\
+$L_5$   & 0.195 $\pm$ 0.12 & 0.354 $\pm$ 0.17   & 0.455 $\pm$ 0.14\\
+$L_6$   & 0.207 $\pm$ 0.12 & 0.391 $\pm$ 0.18   & 0.452 $\pm$ 0.13\\
+$L_7$   & 0.214 $\pm$ 0.12 & 0.420 $\pm$ 0.18   & 0.445 $\pm$ 0.13\\
+$L_8$   & 0.224 $\pm$ 0.12 & 0.448 $\pm$ 0.18   & 0.435 $\pm$ 0.13\\
+$L_9$   & 0.229 $\pm$ 0.12 & 0.467 $\pm$ 0.18   & 0.425 $\pm$ 0.13\\
+$L_{10}$& 0.234 $\pm$ 0.12 & 0.486 $\pm$ 0.18   & 0.414 $\pm$ 0.13\\
+\midrule
+$L$     & 0.192 $\pm$ 0.11 & 0.344 $\pm$ 0.15   & 0.448 $\pm$ 0.16\\
+$L^*$   & 0.292 $\pm$ 0.15 & 0.525 $\pm$ 0.19   & 0.561 $\pm$ 0.16\\
+\midrule
+SMGA    & 0.173 $\pm$ 0.08 & 0.518 $\pm$ 0.12   & 0.493 $\pm$ 0.16\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\section{Conclusions}
+The experimental results in the previous section demonstrate that the proposed
+structural decomposition technique often generates solutions which can achieve high
+scores on segmentation evaluation metrics.  However, automatically selecting a single
+``best'' segmentation without a priori knowledge of the evaluation criteria remains a
+challenging practical issue.
 
 \bibliography{refs}
 
