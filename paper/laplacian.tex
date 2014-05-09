@@ -346,6 +346,7 @@ formalized in \Cref{bd}.
 \begin{algorithmic}[1]
 \REQUIRE{Repetition features $Y \in \R^{m \times n}$, }
 \ENSURE{Boundaries $b$, frame-level segment labels $c$}\\
+
 {\sc Boundary-Detect}$(Y)$
     \STATE{$\hat{y}_t \leftarrow Y_{\cdot, t} / \|Y_{\cdot, t}\|$}
     \COMMENT{Normalize columns $Y_{\cdot,t}$}
@@ -397,7 +398,7 @@ approximately balanced distributions over the set of segment types.
 \begin{algorithmic}[1]
 \REQUIRE{ Affinities: $S^\text{rep}, S^\text{loc} \in \R_+^{n\times n}$\\
 maximum number of segment types: $M$}
-\ENSURE{Segment boundaries $B^m$, frame labels $C^m$ for each $m \in 2\dots M$}\\
+\ENSURE{Boundaries $B^m$, frame labels $C^m$ for ${m \in 2\dots M}$}\\
 {\sc LSD}$(S^\text{rep}, S^\text{loc})$
 \STATE{$R' \leftarrow $ filtered recurrence matrix of $S^\text{rep}$ (\cref{filtered-rep})}
 \STATE{$A \leftarrow $ sequence-augmented affinity matrix (\cref{saam})}
