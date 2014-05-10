@@ -166,13 +166,13 @@ samples of a particular sequence will not be directly linked.
 In order to facilitate the discovery of repeated sections, we modify $R'$ by 
 adding links between adjacent samples $(i, i+1)$ and $(i, i-1)$, resulting in the
 \emph{sequence-augmented graph} $R^+$:
-\begin{eqnarray}
+\begin{align}
 \Delta_{ij} &\defeq \begin{cases}
 1 & |i - j| = 1\\
 0 & \text{otherwise}
 \end{cases},\\
 R^+_{ij} &\defeq \max(\Delta_{ij}, R'_{ij})\label{pathmatrix}.
-\end{eqnarray}
+\end{align}
 With appropriate normalization, $R^+$ can be interpreted as a Markov process
 over samples, where at each step $i$, the process either moves to an adjacent
 sample $i\pm1$, or a random repetition of $i$; a process exemplified by the 
@@ -184,9 +184,11 @@ belonging to the same component, but of course, this information is hidden.  Rat
 by adding links along the first diagonals, the graph becomes fully connected.  
 However, repeated sections will contain internal connectivity structure.  Let $i$ and
 $j$ denote two repetitions of the same sample at different times; then $R^+$ should
-ideally contain edges $\{i, i+1\}$, $\{i, j\}$, $\{i+1, j+1\}$, $\{j, j+1\}$.
-Connections between unrelated blocks are likely to remain sparse, owing primarily to
-cross-section links along the first diagonals.  
+ideally contain sequential edges $\{i, i+1\}$, $\{j, j+1\}$ and repetition edges $\{i,
+j\}$, $\{i+1, j+1\}$. On the other hand, unrelated sections with no repetition edges
+can only connect via the sequential links, which are inherently sparse.
+% Connections between unrelated blocks are likely to remain sparse, owing primarily to
+% cross-section links along the first diagonals.  
 
 % $R^+$ encodes the coarse similarity structure
 % For the purposes of musical structure analysis, we would like to produce a block
@@ -210,8 +212,8 @@ This raises the question: how should $\mu$ be set?  Returning to the motivating
 example of the random walk process, we opt for a process that on average, tends to
 move in sequence or across (all) repetitions with equal probability.  In terms of
 $\mu$, this indicates that we should optimize the combination such that the local
-links achieve equivalent weight to the repetition links.  More precisely, for any 
-frame $i$,
+links achieve equivalent weight to the repetition links.  On average, we would like 
+for any frame $i$,
 $$
 \mu \sum_j R'_{ij} \approx (1-\mu) \sum_j \Delta_{ij} 
 $$
@@ -222,14 +224,15 @@ following quadratic optimization:
 \end{equation}
 where $d_i(A) \defeq \sum_j A_{ij}$ indicates the degree (sum of incident edge-weights) 
 of $i$ in $A$. By treating $d(\cdot) \defeq {[d_i(\cdot)]}_{i=1}^n$ a vector in 
-$\R^n_+$, we obtain the solution to \cref{optweight} in closed form as
+$\R^n_+$, we obtain the solution to \cref{optweight}:
 \begin{equation}
 \mu^* = \frac{\langle d(\Delta), d(R') + d(\Delta)\rangle}{\|d(R') +
 d(\Delta)\|^2}.\label{optweight:solution}
 \end{equation}
 Note that because $\Delta$ is fully connected, we always have $\|d(\Delta)\|^2 > 0$,
-so $\mu^* > 0$.  Consequently, $R^\mu$ retains the full connectivity structure
-of $R^+$, and remains connected even when $R'$ is empty.
+which implies $\mu^* > 0$. Similarly, if $R'$ contains at least one edge, then 
+$\mu^* < 1$, and the resulting combination retains the full connectivity structure of
+the unweighted $R^+$ (\cref{pathmatrix}).
 
 \subsection{Edge weighting and feature fusion}
 In the construction above, we rely upon a single feature representation $X$ to 
@@ -240,7 +243,10 @@ feature-weighted edges by replacing $R'$ with a masked similarity matrix:
 R'_{ij} \mapsto R'_{ij} S_{ij},
 \end{equation}
 where $S_{ij}$ denotes a non-negative affinity between frames $i$ and $j$, \eg,
-a Gaussian kernel over feature vectors $x_i, x_j$.
+a Gaussian kernel over feature vectors $x_i, x_j$:
+\[
+S^\text{rep}_{ij} \defeq \exp\left(-\frac{1}{2\sigma^2}\|x_i - x_j\|^2\right)
+\]
 
 Similarly, $\Delta$ can be replaced with a weighted variant.  However, in doing so,
 care must be taken when selecting the affinity function.  In particular, the same
@@ -283,12 +289,14 @@ L \defeq I - D^{-1/2} A D^{-1/2}.\label{symlaplacian}
 The Laplacian forms the basis of spectral clustering, in which vertices are
 represented in terms of the eigenvectors of $L$~\cite{von2007tutorial}.  More
 specifically, to cluster a dataset into $m$ clusters, each point $t$ is represented as
-the (normalized) vector of the $t$th coordinates of the first $m$ eigenvectors of $L$,
-corresponding to the $m$ smallest eigenvalues.
+the vector of the $t$th coordinates of the first $m$ eigenvectors of $L$,
+corresponding to the $m$ smallest eigenvalues.\footnote{An additional
+length-normalization is applied to each vector, to correct for scaling introduced by
+the symmetric normalized Laplacian~\cite{von2007tutorial}.}
 The motivation for its use stems from the observation that the multiplicity of the bottom
 eigenvalue $\lambda_0 = 0$ corresponds to the number of connected components in a
-graph, and the corresponding eigenvectors $y_i \in \R^n$ encode membership of vertices
-in components.
+graph, and the corresponding eigenvectors $y_i \in \R^n$ encode the component
+membership.
 
 In the non-ideal case, the graph is fully connected, so
 $\lambda_0$ has multiplicity 1, and the bottom eigenvector $y_0$ trivially encodes 
@@ -320,11 +328,11 @@ components represent structural refinements.\label{recurrence}}
  
 \begin{figure*}[t]
 \centering
-\includegraphics[width=\textwidth]{figs/lowrank}
+\includegraphics[width=0.85\textwidth]{figs/lowrank}
 \caption{Pair-wise frame similarity using the first $10$ components for \emph{The Beatles -- Come Together}.  The first
 (trivial) component ($m=1$) captures the entire song, and the second ($m=2$) separates
-the outro from the rest of the song.  Subsequent refinements separate the solo,
-refrain, verse, and outro, and then refine each component into individual measures.\label{lowrank}}
+the outro (final vamp) from the rest of the song.  
+Subsequent refinements separate the solo, refrain, verse, and outro, and then refine each component into individual measures.\label{lowrank}}
 \end{figure*}
 
 To apply spectral clustering, we will apply $k$-means clustering to the (normalized) 
@@ -340,6 +348,7 @@ by clustering the columns of $Y$ after truncating to the first $m$ dimensions.
 After clustering, segment boundaries are detected by searching for change-points in
 the cluster assignments of $Y_{\cdot,t}$ and $Y_{\cdot,t+1}$.  This method is
 formalized in \Cref{bd}.
+Note that the number of segment \emph{types} is not the same as the number of \emph{segments}, because the same type (\eg, a verse) may repeat multiple times throughout the track.
 
 \begin{algorithm}[t]
 \caption{Boundary detection\label{bd}}
@@ -388,9 +397,7 @@ First, we reduce the set of candidates to those in which the mean segment durati
 at least some minimal threshold, in our case, 10 seconds.  
 Subject to this constraint, we select the segmentation level $\tilde{m}$ whose 
 frame-level annotations exhibit maximum entropy, thereby preferring solutions with 
-approximately balanced distributions over the set of segment types.  Note that the
-number of segment \emph{types} is not the same as the number of \emph{segments},
-because the same type (\eg, a verse) may repeat multiple times throughout the track.
+approximately balanced distributions over the set of segment types.  
 
 
 
@@ -463,9 +470,6 @@ Klapuri~\cite{schorkhuber2010constant}.
 Constant-Q frames were mean-aggregated between detected beat events, and stacked using 
 time-delay embedding with one step of history, as in~\cite{serra2014unsupervised}.
 Similarity matrices were then computed by applying a Gaussian kernel
-\[
-S^\text{rep}_{ij} \defeq \exp\left(-\frac{1}{2\sigma^2}\|x_i - x_j\|^2\right)
-\]
 to each pair of beat-synchronous frames $i$ and $j$.
 The bandwidth parameter $\sigma^2$ was estimated by computing the average 
 squared distance between each $x_i$ and its $k$th nearest neighbor, with 
@@ -499,7 +503,7 @@ annotations as compared to Beatles and SALAMI (functional).
 To investigate whether a single $m$ could simultaneously optimize multiple evaluation
 metrics for a given track, we plot the confusion matrices for the oracle selections on
 SALAMI (functional) in \Cref{mconfusion}.  We observe that the
-$m$ which optimizes $F_3$ is frequently larger than those for $F_0.5$ --- as indicated by
+$m$ which optimizes $F_3$ is frequently larger than those for $F_{0.5}$ --- as indicated by
 the mass in the lower triangle of the left plot --- or $F_\text{pair}$  --- as 
 indicated by the upper triangle of the right plot.  
 Although this observation is heavily dependent upon our particular boundary-detection
@@ -511,7 +515,8 @@ resolution.
 
 \begin{table}[t]
 \centering
-\caption{ Beatles (TUT)\label{results:beatles}}
+\caption{Beatles (TUT)\label{results:beatles}}
+\small
 \begin{tabular}{lrrr}
 \toprule
 Method & $F_{0.5}$ & $F_3$ & $F_\text{pair}$\\
@@ -537,6 +542,7 @@ SMGA    & 0.293 $\pm$ 0.13 & 0.699 $\pm$ 0.16   & 0.715 $\pm$ 0.15\\
 \begin{table}[t]
 \centering
 \caption{ SALAMI (Functions)\label{results:salami:func}}
+\small
 \begin{tabular}{lrrr}
 \toprule
 Method & $F_{0.5}$ & $F_3$ & $F_\text{pair}$\\
@@ -588,6 +594,7 @@ SMGA    & 0.224 $\pm$ 0.11 & 0.550 $\pm$ 0.18   & 0.553 $\pm$ 0.15\\
 \begin{table}[t]
 \centering
 \caption{ SALAMI (Small)\label{results:salami:small}}
+\small
 \begin{tabular}{lrrr}
 \toprule
 Method & $F_{0.5}$ & $F_3$ & $F_\text{pair}$\\
@@ -613,18 +620,19 @@ SMGA    & 0.173 $\pm$ 0.08 & 0.518 $\pm$ 0.12   & 0.493 $\pm$ 0.16\\
 \begin{figure*}
 \centering
 \includegraphics[width=0.9\textwidth]{figs/mconfusionfunc}
-\caption{Confusion matrices illustrating the oracle selection of $m\in [2, 10]$ for 
-different pairs of metrics on SALAMI (functional). While $m=2$ is most frequently
-selected for all metrics, the large mass off-diagonal indicates that for a given
-track, a single fixed $m$ does not generally optimize all evaluation metrics.\label{mconfusion}}
+\caption{Confusion matrices illustrating the oracle selection of the number of segment
+types $m\in [2, 10]$ for different pairs of metrics on SALAMI (functional). 
+While $m=2$ is most frequently selected for all metrics, the large mass off-diagonal 
+indicates that for a given track, a single fixed $m$ does not generally optimize all 
+evaluation metrics.\label{mconfusion}}
 \end{figure*}
 
 \section{Conclusions}
-The experimental results in the previous section demonstrate that the proposed
-structural decomposition technique often generates solutions which can achieve high
-scores on segmentation evaluation metrics.  However, automatically selecting a single
-``best'' segmentation without a priori knowledge of the evaluation criteria remains a
-challenging practical issue.
+The experimental results demonstrate that the proposed structural decomposition 
+technique often generates solutions which can achieve high scores on segmentation 
+evaluation metrics.  However, automatically selecting a single ``best'' segmentation 
+without a priori knowledge of the evaluation criteria remains a challenging practical 
+issue.
 
 \bibliography{refs}
 
