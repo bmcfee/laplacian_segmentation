@@ -73,13 +73,6 @@ In the majority of existing work on structural segmentation, the analysis is
 or hierarchical structure in the repeated forms.  Instead, novelty curves are commonly
 used to detect transitions between sections~\cite{serra2012unsupervised}. 
 
-% TODO:   2014-05-06 08:09:31 by Brian McFee <brm2132@columbia.edu>
-%  why are we doing this work?
-%   one level of segmentation is never enough
-%   we want a full parse of the recording
-%   how do nested structures relate to each-other?
-
-
 \subsection{Our contributions}
 In this paper, we formulate the structure analysis problem in the context of spectral
 graph theory.  By combining local sequence information with long-term repeated forms
@@ -103,7 +96,7 @@ the filtered self-similarity matrix.
 % kaiser proposed a method to combine input features for novelty detection
 % our method is different: we optimally combine local timbre information with global
 % harmonic repetition
-Recently, Kaiser~\etal demonstrated a method to combine tonal and timbral features for
+Recently, Kaiser~\etal{} demonstrated a method to combine tonal and timbral features for
 structural boundary detection~\cite{kaiser2013simple}.  Whereas their method forms a
 novelty curve from the combination of multiple features, our feature combination
 differs by using local timbre consistency to connect sequences of long-range tonal repetitions.
@@ -131,7 +124,7 @@ expose block structure at multiple levels of detail.
 Let $X = [x_1, x_2, \dots, x_n] \in \R^{d\times n}$ denote a $d$-dimensional time
 series feature matrix, \eg, a chromagram or sequence of Mel-frequency cepstral 
 coefficients.  As a first step toward detecting and representing repetition structure, 
-we form a \emph{binary recurrence matrix} $R \in \{0,1\}^{n\times n}$, where 
+we form a \emph{binary recurrence matrix} $R \in {\{0,1\}}^{n\times n}$, where 
 \begin{equation}
 R_{ij}(X) \defeq \begin{cases}
 1 & x_i, x_j \text{ are mutual $k$-nearest neighbors}\\
@@ -139,8 +132,6 @@ R_{ij}(X) \defeq \begin{cases}
 \end{cases}
 \end{equation}
 and $k$ is a linkage parameter controlling the degree of connectivity in $R$.
-
-% FIXME: cite for recurrence matrix
 
 If $X$ sufficiently captures the qualities of interest, and $k$ is large
 enough, then repeated structures should appear as diagonal stripes in $R$.
@@ -315,7 +306,7 @@ nested repeating structure.
 \begin{figure*}[t]
 \centering
 \includegraphics[width=\textwidth]{figs/recurrence}
-\caption{Left: the recurrence matrix $R$ for \emph{The Beatles -- Come
+\caption{Left: the recurrence matrix $R$ for \emph{The Beatles --- Come
 Together}. Center: the sequence-augmented affinity matrix $A$.
 Right: the first 10 basis features (columns), ordered left-to-right.  
 The leading columns encode the primary structural components, while subsequent
@@ -325,8 +316,8 @@ components represent structural refinements.\label{recurrence}}
  
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.85\textwidth]{figs/lowrank}
-\caption{Pair-wise frame similarity using the first $10$ components for \emph{The Beatles -- Come Together}.  The first
+\includegraphics[width=0.9\textwidth]{figs/lowrank}
+\caption{Pair-wise frame similarity ($Y\trans Y$) using the first $10$ components for \emph{The Beatles --- Come Together}.  The first
 (trivial) component ($m=1$) captures the entire song, and the second ($m=2$) separates
 the outro (final vamp) from the rest of the song.  
 Subsequent refinements separate the solo, refrain, verse, and outro, and then refine each component into individual measures.\label{lowrank}}
@@ -356,7 +347,7 @@ Note that the number of segment \emph{types} is not the same as the number of \e
 {\sc Boundary-Detect}$(Y)$
     \STATE{$\hat{y}_t \leftarrow Y_{\cdot, t} / \|Y_{\cdot, t}\|$}
     \COMMENT{Normalize columns $Y_{\cdot,t}$}
-    \STATE{Run $k$-means on $\{\hat{y}_t\}_{i=1}^n$ with $k=m$}
+    \STATE{Run $k$-means on ${\{\hat{y}_t\}}_{i=1}^n$ with $k=m$}
     \STATE{Let $c_t$ be the cluster containing $\hat{y}_t$}
     \STATE{$b \leftarrow \{t \given c_t \neq c_{t+1}\}$} 
     \RETURN{$(b, c)$}
@@ -413,7 +404,7 @@ maximum number of segment types: $M$}
     \STATE{$Y \leftarrow$ bottom $m$ eigenvectors of $L$}
     \STATE{$(B^m, C^m) \leftarrow \text{\sc Boundary-Detect}(Y)$}
 \ENDFOR{}
-\RETURN{$\{(B^m, C^m)\}_{m=2}^M$}
+\RETURN{${\{(B^m, C^m)\}}_{m=2}^M$}
 \end{algorithmic}
 \end{algorithm}
 
