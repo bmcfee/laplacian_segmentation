@@ -6,7 +6,6 @@
 \documentclass{article}
 \usepackage{ismir2014,amsmath,cite}
 \usepackage{graphicx}
-% \usepackage{hyperref}
 \usepackage{booktabs}
 \usepackage{brian}
 
@@ -23,16 +22,16 @@
 
 % Two addresses
 % --------------
-%\twoauthors
-%  {First author} {School \\ Department}
-%  {Second author} {Company \\ Address}
+\twoauthors%
+ {Brian McFee} {Center for Jazz Studies \\ Columbia University \\ {\tt brm2132@columbia.edu} }
+ {Daniel P.W. Elllis} {LabROSA \\ Columbia University \\ {\tt dpwe@ee.columbia.edu }}
 
 % Three addresses
 % --------------
-\threeauthors
-  {First author} {Affiliation1 \\ {\tt author1@ismir.edu}}
-  {Second author} {\bf Retain these fake authors in\\\bf submission to preserve the formatting}
-  {Third author} {Affiliation3 \\ {\tt author3@ismir.edu}}
+% \threeauthors
+%   {Brian McFee} {Affiliation1 \\ {\tt author1@ismir.edu}}
+%   {Second author} {\bf Retain these fake authors in\\\bf submission to preserve the formatting}
+%   {Third author} {Affiliation3 \\ {\tt author3@ismir.edu}}
 
 % Four addresses
 % --------------
@@ -59,9 +58,10 @@ structural components at differing levels of granularity.  Finally, we demonstra
 to apply the proposed method to the task of music segmentation.
 \end{abstract}
 %
-\section{Introduction}\label{sec:introduction}
+\section{Introduction}
+\label{sec:introduction}
 Detecting repeated forms in audio is fundamental to the analysis of structure in many 
-forms of music.  While small-scale repetitions --- such as each instance of an
+forms of music.  While small-scale repetitions --- such as instances of an
 individual chord --- are simple to detect, accurately combining multiple 
 small-scale repetitions into larger structures is a challenging algorithmic task.
 Much of the current research on this topic begins by calculating local, frame-wise
@@ -69,10 +69,9 @@ similarities over acoustic features (usually harmonic), and then searching for
 patterns in the all-pairs self-similarity matrix~\cite{foote2000automatic}.
 
 In the majority of existing work on structural segmentation, the analysis is
-\emph{linear}, in the sense that the representation does not explicitly encode nesting
+\emph{flat}, in the sense that the representation does not explicitly encode nesting
 or hierarchical structure in the repeated forms.  Instead, novelty curves are commonly
-used to detect when one section transitions into the
-next~\cite{serra2012unsupervised}. 
+used to detect transitions between sections~\cite{serra2012unsupervised}. 
 
 % TODO:   2014-05-06 08:09:31 by Brian McFee <brm2132@columbia.edu>
 %  why are we doing this work?
@@ -83,7 +82,7 @@ next~\cite{serra2012unsupervised}.
 
 \subsection{Our contributions}
 In this paper, we formulate the structure analysis problem in the context of spectral
-graph theory.  By combining local sequence information with long-term repeated forms,
+graph theory.  By combining local sequence information with long-term repeated forms
 and analyzing the eigenvectors of the resulting graph Laplacian, we produce a compact
 representation that effectively encodes repetition structure at multiple levels of
 granularity.  To effectively link repeating sequences, we formulate an optimally
@@ -107,8 +106,7 @@ the filtered self-similarity matrix.
 Recently, Kaiser~\etal demonstrated a method to combine tonal and timbral features for
 structural boundary detection~\cite{kaiser2013simple}.  Whereas their method forms a
 novelty curve from the combination of multiple features, our feature combination
-operates slightly differently, and uses local timbre consistency to connect sequences
-of long-range tonal repetitions.
+differs by using local timbre consistency to connect sequences of long-range tonal repetitions.
 
 % grohganz used spectral analysis of self-similarity to detect diagonals
 % but our approach is more direct, analyzes the diffusion process rather than the
@@ -163,7 +161,7 @@ to equivalent position within a repeated sequence. Note, however, that successiv
 positions $(i, i+1)$ will not in general be connected in $R'$, so the constituent 
 samples of a particular sequence will not be directly linked.
 
-In order to facilitate the discovery of repeated sections, we modify $R'$ by 
+To facilitate discovery of repeated sections, we modify $R'$ by 
 adding links between adjacent samples $(i, i+1)$ and $(i, i-1)$, resulting in the
 \emph{sequence-augmented graph} $R^+$:
 \begin{align}
@@ -173,17 +171,17 @@ adding links between adjacent samples $(i, i+1)$ and $(i, i-1)$, resulting in th
 \end{cases},\\
 R^+_{ij} &\defeq \max(\Delta_{ij}, R'_{ij})\label{pathmatrix}.
 \end{align}
-With appropriate normalization, $R^+$ can be interpreted as a Markov process
-over samples, where at each step $i$, the process either moves to an adjacent
-sample $i\pm1$, or a random repetition of $i$; a process exemplified by the 
+With appropriate normalization, $R^+$ characterizes a Markov process over samples, 
+where at each step $i$, the process either moves to an adjacent sample $i\pm1$, or 
+a random repetition of $i$; a process exemplified by the 
 Infinite Jukebox~\cite{infinitejukebox}.
 
 \Cref{pathmatrix} explicitly combines local temporal connectivity with long-term
 recurrence information.  Ideally, we would add connections only to pairs $\{i,j\}$
-belonging to the same component, but of course, this information is hidden.  Rather,
-by adding links along the first diagonals, the graph becomes fully connected.  
-However, repeated sections will contain internal connectivity structure.  Let $i$ and
-$j$ denote two repetitions of the same sample at different times; then $R^+$ should
+belonging to the same component, but this information is of course hidden.  By adding 
+links along the first diagonals, the graph becomes fully connected, but 
+repeated sections will exhibit additional internal connectivity structure from the recurrence links.  
+Let $i$ and $j$ denote two repetitions of the same sample at different times; then $R^+$ should
 ideally contain sequential edges $\{i, i+1\}$, $\{j, j+1\}$ and repetition edges $\{i,
 j\}$, $\{i+1, j+1\}$. On the other hand, unrelated sections with no repetition edges
 can only connect via the sequential links, which are inherently sparse.
@@ -196,13 +194,13 @@ can only connect via the sequential links, which are inherently sparse.
 % component (\eg, $i$ and $j$ are both of type \emph{verse}).
 
 \subsection{Balancing local and global linkage}
-While the construction of \cref{pathmatrix} describes the intuition behind combining
-local sequential connections with global repetition structure, it does not explicitly
+While the construction of \cref{pathmatrix} describes the intuition behind the combination of
+local sequential connections and global repetition structure, it does not explicitly
 model the balance between the two competing goals.  In particular, for long tracks
 with many repetitions, the local connectivity structure may be washed out by
 recurrence links, thereby obscuring the sequence structure we hope to reveal.
 
-However, if we allow weights on the edges, then the combination can be parameterized 
+If we allow weights on the edges, then the combination can be parameterized 
 by a weighting parameter $\mu \in [0, 1]$:
 \begin{equation}
 R^\mu \defeq \mu R' + (1 - \mu) \Delta. \label{weightedsum}
@@ -210,7 +208,7 @@ R^\mu \defeq \mu R' + (1 - \mu) \Delta. \label{weightedsum}
 
 This raises the question: how should $\mu$ be set?  Returning to the motivating
 example of the random walk process, we opt for a process that on average, tends to
-move in sequence or across (all) repetitions with equal probability.  In terms of
+move either in sequence or across (all) repetitions with equal probability.  In terms of
 $\mu$, this indicates that we should optimize the combination such that the local
 links achieve equivalent weight to the repetition links.  On average, we would like 
 for any frame $i$,
@@ -223,21 +221,21 @@ following quadratic optimization:
 \min_{\mu \in [0, 1]} \frac{1}{2} \sum_i {(\mu d_i(R') - (1 - \mu)d_i(\Delta))}^2,\label{optweight}
 \end{equation}
 where $d_i(A) \defeq \sum_j A_{ij}$ indicates the degree (sum of incident edge-weights) 
-of $i$ in $A$. By treating $d(\cdot) \defeq {[d_i(\cdot)]}_{i=1}^n$ a vector in 
-$\R^n_+$, we obtain the solution to \cref{optweight}:
+of $i$ in $A$. Treating $d(\cdot) \defeq {[d_i(\cdot)]}_{i=1}^n$ as a vector in 
+$\R^n_+$ yields the optimal solution to \cref{optweight}:
 \begin{equation}
 \mu^* = \frac{\langle d(\Delta), d(R') + d(\Delta)\rangle}{\|d(R') +
 d(\Delta)\|^2}.\label{optweight:solution}
 \end{equation}
-Note that because $\Delta$ is fully connected, we always have $\|d(\Delta)\|^2 > 0$,
+Note that because $\Delta$ is fully connected, it follows that $\|d(\Delta)\|^2 > 0$,
 which implies $\mu^* > 0$. Similarly, if $R'$ contains at least one edge, then 
 $\mu^* < 1$, and the resulting combination retains the full connectivity structure of
 the unweighted $R^+$ (\cref{pathmatrix}).
 
 \subsection{Edge weighting and feature fusion}
-In the construction above, we rely upon a single feature representation $X$ to 
-determine the self-similarity structure, and use constant edge weights for the
-repetition and local edges.  The construction can generalize to support
+The construction above relies upon a single feature representation $X$ to 
+determine the self-similarity structure, and uses constant edge weights for the
+repetition and local edges.  This can be generalized to support
 feature-weighted edges by replacing $R'$ with a masked similarity matrix:
 \begin{equation}
 R'_{ij} \mapsto R'_{ij} S_{ij},
@@ -248,11 +246,10 @@ a Gaussian kernel over feature vectors $x_i, x_j$:
 S^\text{rep}_{ij} \defeq \exp\left(-\frac{1}{2\sigma^2}\|x_i - x_j\|^2\right)
 \]
 
-Similarly, $\Delta$ can be replaced with a weighted variant.  However, in doing so,
-care must be taken when selecting the affinity function.  In particular, the same
-features used to detect repetition (typically harmonic in nature) may not work well
-for local comparisons, since we may not expect successive frames to retain
-harmonic similarity.  
+Similarly, $\Delta$ can be replaced with a weighted sequence graph.  However, in doing so,
+care must be taken when selecting the affinity function.  The same features used to detect 
+repetition (typically harmonic in nature) may not capture local consistency, since 
+successive frames do not generally retain harmonic similarity.  
 
 Recent work has demonstrated that local timbre differences 
 can provide an effective cue for structural boundary
@@ -267,13 +264,13 @@ A_{ij} \defeq \mu R'_{ij} S^\text{rep}_{ij} + (1-\mu) \Delta_{ij} S^\text{loc}_{
 \end{equation}
 where $R'$ is understood to be
 constructed solely from the repetition affinities $S^\text{rep}$, and $\mu$ is
-optimized by \eqref{optweight:solution} on the weighted affinity matrices.
+optimized by the~\eqref{optweight:solution} on the weighted affinity matrices.
 
 
 \section{Algorithms}
 
 The Laplacian is a fundamental tool in the field of spectral graph
-theory, as can be interpreted as a discrete analog of a diffusion operator over the
+theory, as it can be interpreted as a discrete analog of a diffusion operator over the
 vertices of the graph, and its spectrum can be used to characterize 
 vertex connectivity~\cite{chung1997spectral}.  In this section, we describe in detail
 how spectral clustering can be used to analyze the repetition graph constructed in the
@@ -335,11 +332,11 @@ the outro (final vamp) from the rest of the song.
 Subsequent refinements separate the solo, refrain, verse, and outro, and then refine each component into individual measures.\label{lowrank}}
 \end{figure*}
 
-To apply spectral clustering, we will apply $k$-means clustering to the (normalized) 
+To apply spectral clustering, we will use $k$-means clustering with the (normalized) 
 eigenvectors $Y \in \R^{n \times n}$ as features, where $M > 0$ is a 
-specified maximum number of structural components.  By varying the number of
-components $M$ --- equivalently, the dimension of the representation --- we can
-directly adjust the resolution of the resulting segmentation.
+specified maximum number of structural components types.  By varying $M$ --- equivalently, 
+the dimension of the representation --- we can directly adjust the granularity of 
+the resulting segmentation.
 
 
 \subsection{Boundary detection}
@@ -372,8 +369,8 @@ Note that the number of segment \emph{types} is not the same as the number of \e
 To decompose an input song into its structural components, we propose a method, listed
 as \Cref{lsd},
 to find boundaries and structural annotations at multiple levels of structural
-complexity.  This operates by first computing the Laplacian as described above, and
-then iteratively increasing the set of eigenvectors for use in \Cref{bd}.  For $m=2$,
+complexity.  \Cref{lsd} first computes the Laplacian as described above, and
+then iteratively increases the set of eigenvectors for use in \Cref{bd}.  For $m=2$,
 the first two eigenvectors --- corresponding to the two smallest eigenvalues of $L$
 --- are taken.  In general, for $m$ types of repeating component, the bottom $m$
 eigenvectors are used to label frames and detect boundaries.  The result is a sequence
@@ -442,14 +439,13 @@ measuring the best possible segmentation within the set of predictions made by
 \subsection{Data and evaluation}
 Our evaluation data is comprised of two sources:
 \begin{description}
-\item[Beatles-TUT:\footnote{\texttt{http://www.cs.tut.fi/sgn/arg/paulus/structure.html}}]
-174 structurally annotated tracks from the Beatles corpus.  A single
+\item[Beatles-TUT:]
+174 structurally annotated tracks from the Beatles corpus~\cite{paulus2006music}.  A single
 annotation is provided for each track, and annotations generally correspond to
 functional components (\eg, \emph{verse}, \emph{refrain}, or \emph{solo}).
 \item[SALAMI:] 735 tracks from the SALAMI corpus~\cite{smith2011design}.  This corpus
 spans a wide range of genres and instrumentation, and provides multiple
-annotation levels for each track.  We report results on \emph{functional},
-% \emph{large-scale}, 
+annotation levels for each track.  We report results on \emph{functional} 
 and \emph{small-scale} annotations.
 \end{description}
 
@@ -481,18 +477,20 @@ $w=17$.
 
 Local timbre similarity $S^\text{loc}$ was computed by extracting the first 13 Mel
 frequency cepstral coefficients (MFCC), mean-aggregating between detected beats, and
-then applying a Gaussian kernel as done for $S^\text{rep}$.\footnote{All methods were implemented in Python, and source code will be made freely available upon publication.}
+then applying a Gaussian kernel as done for $S^\text{rep}$.
+
+All methods were implemented in Python with librosa~\cite{librosa}.
 
 \subsection{Results}
 The results of the evaluation are listed in
-\Cref{results:beatles,results:salami:func,results:salami:small}.  For each fixed value
-of $m$, the resulting scores are indicated as $L_m$.  $L$ indicates the automatic
+\Cref{results:beatles,results:salami:func,results:salami:small}.  For each fixed $m$, 
+the scores are indicated as $L_m$.  $L$ indicates the automatic
 maximum-entropy selector, and $L^*$ indicates the best possible $m$ for each metric
 independently.
 
 As a common trend across all data sets, the automatic $m$-selector often achieves results
 comparable to the best fixed $m$.  However, it is consistently outperformed by the 
-oracle model $L^*$, indicating that although the output of \Cref{lsd} often contains 
+oracle model $L^*$, indicating that the output of \Cref{lsd} often contains 
 accurate solutions, the automatic selector does not always choose them.
 
 In the case of SALAMI (small), the automatic selector performs dramatically worse than
@@ -506,12 +504,10 @@ SALAMI (functional) in \Cref{mconfusion}.  We observe that the
 $m$ which optimizes $F_3$ is frequently larger than those for $F_{0.5}$ --- as indicated by
 the mass in the lower triangle of the left plot --- or $F_\text{pair}$  --- as 
 indicated by the upper triangle of the right plot.  
-Although this observation is heavily dependent upon our particular boundary-detection
-strategy, it is corroborated by previous observations that even within the context of 
-boundary detection, the 0.5-second and 3.0-second metrics evaluate qualitatively 
-different  objectives~\cite{smith2013meta}.  Consequently, it may be beneficial in 
-practice to provide annotations at multiple resolutions, rather than a single, fixed 
-resolution.
+Although this observation depends upon our particular boundary-detection
+strategy, it is corroborated by previous observations that the 0.5-second and 
+3.0-second metrics evaluate qualitatively different objectives~\cite{smith2013meta}.
+Consequently, it may be beneficial in practice to provide segmentations at multiple resolutions.
 
 \begin{table}[t]
 \centering
@@ -629,10 +625,14 @@ evaluation metrics.\label{mconfusion}}
 
 \section{Conclusions}
 The experimental results demonstrate that the proposed structural decomposition 
-technique often generates solutions which can achieve high scores on segmentation 
+technique often generates solutions which achieve high scores on segmentation 
 evaluation metrics.  However, automatically selecting a single ``best'' segmentation 
 without a priori knowledge of the evaluation criteria remains a challenging practical 
 issue.
+
+\section{Acknowledgments}
+The authors acknowledge support from The Andrew W. Mellon Foundation,
+and NSF grant IIS-1117015.
 
 \bibliography{refs}
 
