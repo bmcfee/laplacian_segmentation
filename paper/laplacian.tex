@@ -132,6 +132,7 @@ R_{ij}(X) \defeq \begin{cases}
 1 & x_i, x_j \text{ are mutual $k$-nearest neighbors}\\
 0 & \text{otherwise},
 \end{cases}
+\label{unfiltered-rep}
 \end{equation}
 and $k$ is a linkage parameter controlling the degree of connectivity in $R$.
 
@@ -346,8 +347,9 @@ type (\eg, verse) may repeat multiple times throughout the track.
 \caption{Boundary detection\label{bd}}
 \begin{algorithmic}[1]
 \REQUIRE{Repetition features $Y \in \R^{m \times n}$, }
-\ENSURE{Boundaries $b$, segment labels $c \in {[m]}^n$}\\
-
+\ENSURE{Boundaries $b$, segment labels $c \in {[m]}^n$}
+\item[]
+\item[]
 {\sc Boundary-Detect}$(Y)$
     \STATE{$\hat{y}_t \leftarrow Y_{\cdot, t} / \|Y_{\cdot, t}\|$}
     \COMMENT{Normalize columns $Y_{\cdot,t}$}
@@ -399,10 +401,15 @@ approximately balanced distributions over the set of segment types.
 \begin{algorithmic}[1]
 \REQUIRE{ Affinities: $S^\text{rep}, S^\text{loc} \in \R_+^{n\times n}$\\
 maximum number of segment types: $M$}
-\ENSURE{Boundaries $B^m$, frame labels $C^m$ for ${m \in 2\dots M}$}\\
+\ENSURE{Boundaries $B^m$, frame labels $C^m$ for ${m \in 2\dots M}$}
+\item[]
+\item[]
 {\sc LSD}$(S^\text{rep}, S^\text{loc})$
-\STATE{$R' \leftarrow $ filtered recurrence matrix of $S^\text{rep}$ (\cref{filtered-rep})}
-\STATE{$A \leftarrow $ sequence-augmented affinity matrix (\cref{saam})}
+% \STATE{$R' \leftarrow $ filtered recurrence matrix of $S^\text{rep}$ (\cref{filtered-rep})}
+\STATE{$R \leftarrow $ \cref{unfiltered-rep} on $S^\text{rep}$} \COMMENT{Recurrence
+detection}
+\STATE{$R' \leftarrow $ \cref{filtered-rep} on $R$} \COMMENT{Recurrence filtering}
+\STATE{$A \leftarrow $ \cref{saam}} \COMMENT{Sequence augmentation}
 \STATE{$L \leftarrow I - D^{-1/2} A D^{-1/2}$}
 \FOR{$m \in 2, 3, \dots, M$}
     \STATE{$Y \leftarrow$ bottom $m$ eigenvectors of $L$}
