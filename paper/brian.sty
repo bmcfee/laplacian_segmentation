@@ -1,5 +1,4 @@
 \usepackage{amsmath,amssymb}
-% \usepackage[noabbrev]{cleveref}
 \usepackage{algorithm}
 \usepackage[noend]{algorithmic}
 \usepackage{multirow}
@@ -8,7 +7,9 @@
 \usepackage{nicefrac}
 \usepackage{stmaryrd}
 \usepackage{braket}
-\usepackage{cleveref}
+
+% \usepackage{cleveref}
+\usepackage[noabbrev]{cleveref}
 
 \def\A{\ensuremath{\mathcal{A}}}
 \def\B{\ensuremath{\mathcal{B}}}
@@ -57,7 +58,7 @@
 }}
 \def\SUBGRAD{{%
     \,\setbox0\hbox{\raisebox{0.35ex}{$\cdot$}}%
-    \rlap{\hbox to \wd0{\hss$\nabla$\hss}}\box0\!%
+    \rlap{\hbox{} to \wd0{\hss$\nabla$\hss}}\box0\!%
 }}
 
 
