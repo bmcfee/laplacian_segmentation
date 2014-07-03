@@ -76,7 +76,7 @@ used to detect transitions between sections.
 
 \subsection{Our contributions}
 In this paper, we formulate the structure analysis problem in the context of spectral
-graph theory.  By combining local sequence information with long-term repeated forms
+graph theory.  By combining local consistency cues with long-term repetition encodings
 and analyzing the eigenvectors of the resulting graph Laplacian, we produce a compact
 representation that effectively encodes repetition structure at multiple levels of
 granularity.  To effectively link repeating sequences, we formulate an optimally
@@ -84,8 +84,7 @@ weighted combination of local timbre consistency and long-term repetition descri
 
 To motivate the analysis technique, we demonstrate its use for the
 standard task of flat structural annotation.  However, we emphasize that the approach
-itself has more general application in the simultaneous analysis of structure at multiple 
-levels of granularity.
+itself can be applied more generally to analyze structure at multiple resolutions.
 
 \subsection{Related work}
 
@@ -101,7 +100,8 @@ the filtered self-similarity matrix.
 Recently, Kaiser~\etal{} demonstrated a method to combine tonal and timbral features for
 structural boundary detection~\cite{kaiser2013simple}.  Whereas their method forms a
 novelty curve from the combination of multiple features, our feature combination
-differs by using local timbre consistency to connect sequences of long-range tonal repetitions.
+differs by using local timbre consistency to build internal connections among 
+sequences of long-range tonal repetitions.
 
 % grohganz used spectral analysis of self-similarity to detect diagonals
 % but our approach is more direct, analyzes the diffusion process rather than the
@@ -117,7 +117,7 @@ repeating elements~\cite{kaiser2010music}.
 As we will demonstrate, the Laplacian provides a more direct means to
 expose block structure at multiple levels of detail.
 
-\section{Encoding repeated structure}
+\section{Graphical repetition encoding}
 % Begin with nearest-neighbor linkage in some feature space
 % Apply diagonal majority vote filtering
 % Add the conveyor belt links
@@ -138,7 +138,7 @@ and $k$ is a linkage parameter controlling the degree of connectivity in $R$.
 If $X$ sufficiently captures the qualities of interest, and $k$ is large
 enough, then repeated structures should appear as diagonal stripes in $R$.
 In practice, it is beneficial to apply a smoothing filter to $R$ to suppress erroneous
-links, and fill in gaps.  Here, we apply a windowed majority vote to each diagonal of
+links and fill in gaps.  Here, we apply a windowed majority vote to each diagonal of
 $R$, resulting in the filtered matrix $R'$:
 \begin{equation}
 R'_{ij} \defeq \maj\left\{ R_{i+t, j+t} \given t \in -w, -w+1, \dots, w\right\},
@@ -151,8 +151,8 @@ repetition sequence.
 The filtered recurrence matrix $R'$ can be interpreted as an unweighted, undirected 
 graph, whose vertices correspond to samples (columns of $X$), and edges correspond 
 to equivalent position within a repeated sequence. Note, however, that successive 
-positions $(i, i+1)$ will not in general be connected in $R'$, so the constituent 
-samples of a particular sequence will not be directly linked.
+positions $(i, i+1)$ will not generally be connected in $R'$, so the constituent 
+samples of a particular sequence will may not be connected.
 
 To facilitate discovery of repeated sections, we modify $R'$ by 
 adding links between adjacent samples $(i, i+1)$ and $(i, i-1)$, resulting in the
@@ -188,12 +188,12 @@ can only connect via the sequential links, which are inherently sparse.
 
 \subsection{Balancing local and global linkage}
 The construction of \cref{pathmatrix} describes the intuition behind the combination of
-local sequential connections and global repetition structure, but it does not explicitly
-model the balance between the two competing goals.  In particular, for long tracks
-with many repetitions, the local connectivity structure may be washed out by
-recurrence links, thereby obscuring the sequence structure we hope to reveal.
+local sequential connections and global repetition structure, but it does not balance the 
+two competing goals.  Long tracks with many repetitions can produce recurrence links which 
+vastly outnumber local connectivity connections.
+In this regime, subsequent analysis of the graph may fail to detect sequential structure.
 
-If we allow weights on the edges, then the combination can be parameterized 
+If we allow (non-negative) weights on the edges, then the combination can be parameterized 
 by a weighting parameter $\mu \in [0, 1]$:
 \begin{equation}
 R^\mu \defeq \mu R' + (1 - \mu) \Delta. \label{weightedsum}
@@ -202,7 +202,7 @@ R^\mu \defeq \mu R' + (1 - \mu) \Delta. \label{weightedsum}
 This raises the question: how should $\mu$ be set?  Returning to the motivating
 example of the random walk process, we opt for a process that on average, tends to
 move either in sequence or across (all) repetitions with equal probability.  In terms of
-$\mu$, this indicates that we should optimize the combination such that the local
+$\mu$, this indicates that the combination should be weighted such that the local
 links achieve equivalent weight to the repetition links.  On average, we would like 
 for any frame $i$,
 $$
@@ -293,10 +293,10 @@ In the non-ideal case, the graph is fully connected, so
 $\lambda_0$ has multiplicity 1, and the bottom eigenvector $y_0$ trivially encodes 
 membership in the graph. 
 However, in the case of $A$, we expect there to be many components
-with high intra-connectivity and relatively small inter-connectivity, \eg, at the
-transition point between sections.  Spectral clustering is well-suited to detecting
-and pruning these weak links, and it can be viewed as an approximation method for
-finding normalized graph cuts~\cite{von2007tutorial}.
+with high intra-connectivity and relatively small inter-connectivity at the
+transition points between sections.  Spectral clustering can be viewed as an approximation 
+method for finding normalized graph cuts~\cite{von2007tutorial}, and it is well-suited to detecting
+and pruning these weak links.
 
 \Cref{recurrence} illustrates an example of the encoding produced by spectral
 decomposition of $L$.  Although the first eigenvector (column) is uninformative, 
@@ -313,7 +313,7 @@ nested repeating structure.
 Together}. Center: the sequence-augmented affinity matrix $A$.
 Right: the first 10 basis features (columns), ordered left-to-right.  
 The leading columns encode the primary structural components, while subsequent
-components represent structural refinements.\label{recurrence}}
+components encode refinements.\label{recurrence}}
 \end{figure*}
 
  
@@ -323,13 +323,13 @@ components represent structural refinements.\label{recurrence}}
 \caption{Pair-wise frame similarity ($Y\trans Y$) using the first $10$ components for \emph{The Beatles --- Come Together}.  The first
 (trivial) component ($m=1$) captures the entire song, and the second ($m=2$) separates
 the outro (final vamp) from the rest of the song.  
-Subsequent refinements separate the solo, refrain, verse, and outro, and then refine each component into individual measures.\label{lowrank}}
+Subsequent refinements separate the solo, refrain, verse, and outro, and then individual measures.\label{lowrank}}
 \end{figure*}
 
 To apply spectral clustering, we will use $k$-means clustering with the (normalized) 
 eigenvectors $Y \in \R^{n \times n}$ as features, where $M > 0$ is a 
-specified maximum number of structural components types.  By varying $M$ --- equivalently, 
-the dimension of the representation --- we can directly adjust the granularity of 
+specified maximum number of structural components types.  Varying $M$ --- equivalently, 
+the dimension of the representation --- directly controls the granularity of 
 the resulting segmentation.
 
 
@@ -339,7 +339,8 @@ by clustering the columns of $Y$ after truncating to the first $m$ dimensions.
 After clustering, segment boundaries are detected by searching for change-points in
 the cluster assignments of $Y_{\cdot,t}$ and $Y_{\cdot,t+1}$.  This method is
 formalized in \Cref{bd}.
-Note that the number of segment \emph{types} is not the same as the number of \emph{segments}, because the same type (\eg, a verse) may repeat multiple times throughout the track.
+Note that the number of segment \emph{types} is distinct from the number of \emph{segments} because a single 
+type (\eg, verse) may repeat multiple times throughout the track.
 
 \begin{algorithm}[t]
 \caption{Boundary detection\label{bd}}
@@ -370,24 +371,24 @@ the first two eigenvectors --- corresponding to the two smallest eigenvalues of 
 eigenvectors are used to label frames and detect boundaries.  The result is a sequence
 of boundaries $B^m$ and frame labels $C^m$, for values $m \in 2, 3, \dots, M$.
 
-Note that unlike most prior structural analysis algorithms, \Cref{lsd} does not produce a
-single decomposition of the song, but rather a sequence of iteratively more complex 
-decompositions.  This property can be valuable in visualization applications,
+Note that unlike most structural analysis algorithms, \Cref{lsd} does not produce a
+single decomposition of the song, but rather a sequence of decompositions ordered by 
+increasing complexity.  This property can be beneficial in visualization applications,
 where a user may be interested in the relationship between structural components at
-multiple levels.  Similarly, in interactive display applications, a user may wish to 
-request more or less detailed analyses for a track.  Since complexity is controlled by
+multiple levels.  Similarly, in interactive display applications, a user may request 
+more or less detailed analyses for a track.  Since complexity is controlled by
 a single, discrete parameter $M$, this application is readily supported with a minimal
 set of interface controls (\eg, a slider).
 
 However, for standardized evaluation, the method must produce a single, flat
 segmentation of the track.  Adaptively estimating the appropriate level of analysis in
 this context is somewhat ill-posed, as different use-cases require different amounts of 
-detail.  Here, we apply a simple selection criterion, based on the level of detail
+detail.  Here, we apply a simple selection criterion based on the level of detail
 commonly observed in standard datasets~\cite{harte2010towards,smith2011design}.  
-First, we reduce the set of candidates to those in which the mean segment duration is 
-at least some minimal threshold, in our case, 10 seconds.  
-Subject to this constraint, we select the segmentation level $\tilde{m}$ whose 
-frame-level annotations exhibit maximum entropy, thereby preferring solutions with 
+First, the set of candidates is reduced to those in which the mean segment duration is 
+at least a minimum threshold of 10 seconds.  
+Subject to this constraint, the segmentation level $\tilde{m}$ is selected to maximize
+frame-level annotation entropy.  This strategy tends to produce solutions with 
 approximately balanced distributions over the set of segment types.  
 
 
@@ -453,19 +454,17 @@ Serr\`{a} \etal, denoted here as SMGA~\cite{serra2014unsupervised}.
 All input signals are sampled at 22050Hz (mono), and analyzed with a 2048-sample FFT window
 and 512-sample hop.  Repetition similarity matrices $S^\text{rep}$ were 
 computed by first extracting log-power constant-Q spectrograms over 72 bins, ranging 
-from $C2$ (32.7Hz) to $C8$ (2093.0Hz). Constant-Q spectrograms were generated by a 
-down-sampling method similar to that of Sch{\"o}rkhuber and 
-Klapuri~\cite{schorkhuber2010constant}.  
+from $C2$ (32.7~Hz) to $C8$ (2093.0~Hz).
 
 Constant-Q frames were mean-aggregated between detected beat events, and stacked using 
-time-delay embedding with one step of history, as in~\cite{serra2014unsupervised}.
+time-delay embedding with one step of history as in~\cite{serra2014unsupervised}.
 Similarity matrices were then computed by applying a Gaussian kernel
 to each pair of beat-synchronous frames $i$ and $j$.
 The bandwidth parameter $\sigma^2$ was estimated by computing the average 
 squared distance between each $x_i$ and its $k$th nearest neighbor, with 
-$k$ set to $1 + \lceil 2\log_2 n\rceil$.  The same $k$ was used to connect nearest
-neighbors when building the recurrence matrix $R$, with the additional constraint that
-frames cannot link to neighbors within 3 beats of each-other, which prevents
+$k$ set to $1 + \lceil 2\log_2 n\rceil$ (where $n$ denotes the number of detected beats).
+The same $k$ was used to connect nearest neighbors when building the recurrence matrix $R$, 
+with the additional constraint that frames cannot link to neighbors within 3 beats of each-other, which prevents
 self-similar connections within the same measure. The majority vote window was set to
 $w=17$.
 
@@ -473,7 +472,8 @@ Local timbre similarity $S^\text{loc}$ was computed by extracting the first 13 M
 frequency cepstral coefficients (MFCC), mean-aggregating between detected beats, and
 then applying a Gaussian kernel as done for $S^\text{rep}$.
 
-All methods were implemented in Python with librosa~\cite{librosa}.
+All methods were implemented in Python with NumPy and 
+librosa~\cite{van2011numpy, librosa}.
 
 \subsection{Results}
 The results of the evaluation are listed in
@@ -501,7 +501,8 @@ indicated by the upper triangle of the right plot.
 Although this observation depends upon our particular boundary-detection
 strategy, it is corroborated by previous observations that the 0.5-second and 
 3.0-second metrics evaluate qualitatively different objectives~\cite{smith2013meta}.
-Consequently, it may be beneficial in practice to provide segmentations at multiple resolutions.
+Consequently, it may be beneficial in practice to provide segmentations at multiple 
+resolutions when the specific choice of evaluation criterion is unknown.
 
 \begin{table}
 \centering
