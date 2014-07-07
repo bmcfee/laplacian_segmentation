@@ -342,21 +342,37 @@ Note that the number of segment \emph{types} is distinct from the number of \emp
 type (\eg, verse) may repeat multiple times throughout the track.
 
 \begin{algorithm}[t]
-\caption{Boundary detection\label{bd}}
+\caption{Boundary detection}\label{bd}
 \begin{algorithmic}[1]
-\REQUIRE{Laplacian eigenvectors $Y \in \R^{n \times m}$, }
-\ENSURE{Boundaries $b$, segment labels $c \in {[m]}^n$}
-\item[]
-\item[]
-{\sc Boundary-Detect}$(Y)$
-    \STATE{$\hat{y}_i \leftarrow Y_{i, \cdot} / \|Y_{i, \cdot}\|$}
-    \COMMENT{Normalize each row $Y_{i, \cdot}$}
-    \STATE{Run $k$-means on ${\{\hat{y}_i\}}_{i=1}^n$ with $k=m$}
-    \STATE{Let $c_i$ denote the cluster containing $\hat{y}_i$}
-    \STATE{$b \leftarrow \{i \given c_i \neq c_{i+1}\}$} 
-    \RETURN{$(b, c)$}
+\Require{Laplacian eigenvectors $Y \in \R^{n \times m}$, }
+\Ensure{Boundaries $b$, segment labels $c \in {[m]}^n$}
+\Function{Boundary-detect}{$Y$}
+    \State{$\hat{y}_i \leftarrow Y_{i, \cdot} / \|Y_{i, \cdot}\|$}
+    \Comment{Normalize each row $Y_{i, \cdot}$}
+    \State{Run $k$-means on ${\{\hat{y}_i\}}_{i=1}^n$ with $k=m$}
+    \State{Let $c_i$ denote the cluster containing $\hat{y}_i$}
+    \State{$b \leftarrow \{i \given c_i \neq c_{i+1}\}$} 
+    \State{\Return{$(b, c)$}}
+\EndFunction{}
 \end{algorithmic}
 \end{algorithm}
+
+% \begin{algorithm}[t]
+% \caption{Boundary detection\label{bd}}
+% \begin{algorithmic}[1]
+% \REQUIRE{Laplacian eigenvectors $Y \in \R^{n \times m}$, }
+% \ENSURE{Boundaries $b$, segment labels $c \in {[m]}^n$}
+% \item[]
+% \item[]
+% {\sc Boundary-Detect}$(Y)$
+%     \STATE{$\hat{y}_i \leftarrow Y_{i, \cdot} / \|Y_{i, \cdot}\|$}
+%     \COMMENT{Normalize each row $Y_{i, \cdot}$}
+%     \STATE{Run $k$-means on ${\{\hat{y}_i\}}_{i=1}^n$ with $k=m$}
+%     \STATE{Let $c_i$ denote the cluster containing $\hat{y}_i$}
+%     \STATE{$b \leftarrow \{i \given c_i \neq c_{i+1}\}$} 
+%     \RETURN{$(b, c)$}
+% \end{algorithmic}
+% \end{algorithm}
 
 
 \subsection{Laplacian structural decomposition}
@@ -381,12 +397,12 @@ a single, discrete parameter $M$, this application is readily supported with a m
 set of interface controls (\eg, a slider).
 
 However, for standardized evaluation, the method must produce a single, flat
-segmentation of the track.  Adaptively estimating the appropriate level of analysis in
-this context is somewhat ill-posed, as different use-cases require different amounts of 
-detail.  Here, we apply a simple selection criterion based on the level of detail
+segmentation.  Adaptively estimating the appropriate level of analysis in
+this context is somewhat ill-posed, as different use-cases require differing levels of 
+detail.  We apply a simple selection criterion based on the level of detail
 commonly observed in standard datasets~\cite{harte2010towards,smith2011design}.  
 First, the set of candidates is reduced to those in which the mean segment duration is 
-at least a minimum threshold of 10 seconds.  
+at least 10 seconds.  
 Subject to this constraint, the segmentation level $\tilde{m}$ is selected to maximize
 frame-level annotation entropy.  This strategy tends to produce solutions with 
 approximately balanced distributions over the set of segment types.  
@@ -397,24 +413,21 @@ approximately balanced distributions over the set of segment types.
 \begin{algorithm}[t]
 \caption{Laplacian structural decomposition\label{lsd}}
 \begin{algorithmic}[1]
-\REQUIRE{ Affinities: $S^\text{rep}, S^\text{loc} \in \R_+^{n\times n}$\\
-maximum number of segment types: $M$}
-\ENSURE{Boundaries $B^m$, frame labels $C^m$ for ${m \in 2\dots M}$}
-\item[]
-\item[]
-% {\sc LSD}$(S^\text{rep}, S^\text{loc}, M)$
-{\sc LSD}$(S^\text{rep}, S^\text{loc}, M)$
-% \STATE{$R' \leftarrow $ filtered recurrence matrix of $S^\text{rep}$ (\cref{filtered-rep})}
-\STATE{$R \leftarrow $ \cref{unfiltered-rep} on $S^\text{rep}$} \COMMENT{Recurrence
-detection}
-\STATE{$R' \leftarrow $ \cref{filtered-rep} on $R$} \COMMENT{Recurrence filtering}
-\STATE{$A \leftarrow $ \cref{saam}} \COMMENT{Sequence augmentation}
-\STATE{$L \leftarrow I - D^{-1/2} A D^{-1/2}$}
-\FOR{$m \in 2, 3, \dots, M$}
-    \STATE{$Y \leftarrow$ bottom $m$ eigenvectors of $L$}
-    \STATE{$(B^m, C^m) \leftarrow \text{\sc Boundary-Detect}(Y)$}
-\ENDFOR{}
-\RETURN{${\{(B^m, C^m)\}}_{m=2}^M$}
+\Require{ Affinities: $S^\text{rep}, S^\text{loc} \in \R_+^{n\times n}$, 
+maximum number of segment types $0 < M \leq n$}
+\Ensure{Boundaries $B^m$ and frame labels $C^m$ for ${m \in 2\dots M}$}
+\Function{\sc LSD}{$S^\text{rep}, S^\text{loc}, M$}
+\State{$R \leftarrow $ \cref{unfiltered-rep} on $S^\text{rep}$}
+\Comment{Recurrence detection}
+\State{$R' \leftarrow $ \cref{filtered-rep} on $R$} \Comment{Recurrence filtering}
+\State{$A \leftarrow $ \cref{saam}} \Comment{Sequence augmentation}
+\State{$L \leftarrow I - D^{-1/2} A D^{-1/2}$}
+\For{$m \in 2, 3, \dots, M$}
+    \State{$Y \leftarrow$ bottom $m$ eigenvectors of $L$}
+    \State{$(B^m, C^m) \leftarrow \text{\sc Boundary-Detect}(Y)$}
+\EndFor{}
+\State{\Return{${\{(B^m, C^m)\}}_{m=2}^M$}}
+\EndFunction{}
 \end{algorithmic}
 \end{algorithm}
 
