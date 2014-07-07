@@ -319,7 +319,7 @@ components encode refinements.\label{recurrence}}
  
 \begin{figure*}[t]
 \centering
-\includegraphics[width=0.95\textwidth]{figs/lowrank}
+\includegraphics[width=\textwidth]{figs/lowrank}
 \caption{Pair-wise frame similarities $\left(YY\trans\right)$ using the first $10$ components for \emph{The Beatles --- Come Together}.  The first
 (trivial) component ($m=1$) captures the entire song, and the second ($m=2$) separates
 the outro (final vamp) from the rest of the song.  
@@ -356,24 +356,6 @@ type (\eg, verse) may repeat multiple times throughout the track.
 \EndFunction{}
 \end{algorithmic}
 \end{algorithm}
-
-% \begin{algorithm}[t]
-% \caption{Boundary detection\label{bd}}
-% \begin{algorithmic}[1]
-% \REQUIRE{Laplacian eigenvectors $Y \in \R^{n \times m}$, }
-% \ENSURE{Boundaries $b$, segment labels $c \in {[m]}^n$}
-% \item[]
-% \item[]
-% {\sc Boundary-Detect}$(Y)$
-%     \STATE{$\hat{y}_i \leftarrow Y_{i, \cdot} / \|Y_{i, \cdot}\|$}
-%     \COMMENT{Normalize each row $Y_{i, \cdot}$}
-%     \STATE{Run $k$-means on ${\{\hat{y}_i\}}_{i=1}^n$ with $k=m$}
-%     \STATE{Let $c_i$ denote the cluster containing $\hat{y}_i$}
-%     \STATE{$b \leftarrow \{i \given c_i \neq c_{i+1}\}$} 
-%     \RETURN{$(b, c)$}
-% \end{algorithmic}
-% \end{algorithm}
-
 
 \subsection{Laplacian structural decomposition}
 
@@ -447,7 +429,7 @@ oracle model. For each track, a different $m^*$ is selected to maximize the
 evaluation metric of interest.  This can be viewed as a simulation of interactive
 visualization, in which the user has the freedom to dynamically adapt the level of
 detail until she is satisfied.  Results in this setting may be interpreted as
-measuring the best possible segmentation within the set of predictions made by
+measuring the best possible decomposition within the set produced by
 \Cref{lsd}.
 
 \subsection{Data and evaluation}
@@ -629,7 +611,7 @@ SMGA    & 0.173 $\pm$ 0.08 & 0.518 $\pm$ 0.12   & 0.493 $\pm$ 0.16\\
 
 \begin{figure*}
 \centering
-\includegraphics[width=0.95\textwidth]{figs/mconfusionfunc}
+\includegraphics[width=\textwidth]{figs/mconfusionfunc}
 \caption{Confusion matrices illustrating the oracle selection of the number of segment
 types $m\in [2, 10]$ for different pairs of metrics on SALAMI (functional). 
 While $m=2$ is most frequently selected for all metrics, the large mass off-diagonal 
