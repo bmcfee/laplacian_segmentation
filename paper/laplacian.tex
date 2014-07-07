@@ -121,8 +121,10 @@ expose block structure at multiple levels of detail.
 % Begin with nearest-neighbor linkage in some feature space
 % Apply diagonal majority vote filtering
 % Add the conveyor belt links
-% Compute the graph laplacian, observe magic
+% Compute the graph Laplacian, observe magic
 
+Our general structural analysis strategy is to construct and partition a graph
+over time points (samples) in the song.
 Let $X = [x_1, x_2, \dots, x_n] \in \R^{d\times n}$ denote a $d$-dimensional time
 series feature matrix, \eg, a chromagram or sequence of Mel-frequency cepstral 
 coefficients.  As a first step toward detecting and representing repetition structure, 
@@ -134,12 +136,11 @@ R_{ij}(X) \defeq \begin{cases}
 \end{cases}
 \label{unfiltered-rep}
 \end{equation}
-and $k$ is a linkage parameter controlling the degree of connectivity in $R$.
+and $k > 0$ parameterizes the degree of connectivity.
 
-If $X$ sufficiently captures the qualities of interest, and $k$ is large
-enough, then repeated structures should appear as diagonal stripes in $R$.
-In practice, it is beneficial to apply a smoothing filter to $R$ to suppress erroneous
-links and fill in gaps.  Here, we apply a windowed majority vote to each diagonal of
+Ideally, repeated structures should appear as diagonal stripes in $R$.
+In practice, it is beneficial to apply a smoothing filter to suppress erroneous
+links and fill in gaps.  We apply a windowed majority vote to each diagonal of
 $R$, resulting in the filtered matrix $R'$:
 \begin{equation}
 R'_{ij} \defeq \maj\left\{ R_{i+t, j+t} \given t \in -w, -w+1, \dots, w\right\},
@@ -153,10 +154,10 @@ The filtered recurrence matrix $R'$ can be interpreted as an unweighted, undirec
 graph, whose vertices correspond to samples (columns of $X$), and edges correspond 
 to equivalent position within a repeated sequence. Note, however, that successive 
 positions $(i, i+1)$ will not generally be connected in $R'$, so the constituent 
-samples of a particular sequence will may not be connected.
+samples of a particular sequence may not be connected.
 
-To facilitate discovery of repeated sections, we modify $R'$ by 
-adding links between adjacent samples $(i, i+1)$ and $(i, i-1)$, resulting in the
+To facilitate discovery of repeated sections, edges between adjacent samples $(i, i+1)$
+and $(i, i-1)$ are introduced, resulting in the
 \emph{sequence-augmented graph} $R^+$:
 \begin{align}
 \Delta_{ij} &\defeq \begin{cases}
@@ -170,15 +171,15 @@ where at each step $i$, the process either moves to an adjacent sample $i\pm1$, 
 a random repetition of $i$; a process exemplified by the 
 Infinite Jukebox~\cite{infinitejukebox}.
 
-\Cref{pathmatrix} explicitly combines local temporal connectivity with long-term
-recurrence information.  Ideally, we would add connections only to pairs $\{i,j\}$
-belonging to the same component, but this information is of course hidden.  By adding 
-links along the first diagonals, the graph becomes fully connected, but 
-repeated sections will exhibit additional internal connectivity structure from the recurrence links.  
-Let $i$ and $j$ denote two repetitions of the same sample at different times; then $R^+$ should
-ideally contain sequential edges $\{i, i+1\}$, $\{j, j+1\}$ and repetition edges $\{i,
+\Cref{pathmatrix} combines local temporal connectivity with long-term
+recurrence information.  Ideally, edges would exist only between pairs $\{i,j\}$
+belonging to the same structural component, but of course, this information is hidden.  
+The added edges along the first diagonals create a fully connected graph, but due to
+recurrence links, repeated sections will exhibit additional internal connectivity.  
+Let $i$ and $j$ denote two repetitions of the same sample at different times; then $R^+$ 
+should contain sequential edges $\{i, i+1\}$, $\{j, j+1\}$ and repetition edges $\{i,
 j\}$, $\{i+1, j+1\}$. On the other hand, unrelated sections with no repetition edges
-can only connect via the sequential links, which are inherently sparse.
+can only connect via sequence edges.
 % Connections between unrelated blocks are likely to remain sparse, owing primarily to
 % cross-section links along the first diagonals.  
 
@@ -188,33 +189,34 @@ can only connect via the sequential links, which are inherently sparse.
 % component (\eg, $i$ and $j$ are both of type \emph{verse}).
 
 \subsection{Balancing local and global linkage}
-The construction of \cref{pathmatrix} describes the intuition behind the combination of
-local sequential connections and global repetition structure, but it does not balance the 
+The construction of \cref{pathmatrix} describes the intuition behind combining
+local sequential connections with global repetition structure, but it does not balance the 
 two competing goals.  Long tracks with many repetitions can produce recurrence links which 
 vastly outnumber local connectivity connections.
-In this regime, subsequent analysis of the graph may fail to detect sequential structure.
+In this regime, partitioning into contiguous sections becomes difficult, and subsequent 
+analysis of the graph may fail to detect sequential structure.
 
 If we allow (non-negative) weights on the edges, then the combination can be parameterized 
 by a weighting parameter $\mu \in [0, 1]$:
 \begin{equation}
-R^\mu \defeq \mu R' + (1 - \mu) \Delta. \label{weightedsum}
+R_{ij}^\mu \defeq \mu R_{ij}' + (1 - \mu) \Delta_{ij}. \label{weightedsum}
 \end{equation}
 
 This raises the question: how should $\mu$ be set?  Returning to the motivating
-example of the random walk process, we opt for a process that on average, tends to
+example of the random walk, we opt for a process that on average, tends to
 move either in sequence or across (all) repetitions with equal probability.  In terms of
-$\mu$, this indicates that the combination should be weighted such that the local
-links achieve equivalent weight to the repetition links.  On average, we would like 
-for any frame $i$,
+$\mu$, this indicates that the combination should assign equal weight to the local and
+repetition edges.
+This suggests a balancing objective for all frames $i$:
 $$
-\mu \sum_j R'_{ij} \approx (1-\mu) \sum_j \Delta_{ij} 
+\mu \sum_j R'_{ij} \approx (1-\mu) \sum_j \Delta_{ij}.
 $$
 Minimizing the average squared error between the two terms above leads to the
 following quadratic optimization:
 \begin{equation}
 \min_{\mu \in [0, 1]} \frac{1}{2} \sum_i {(\mu d_i(R') - (1 - \mu)d_i(\Delta))}^2,\label{optweight}
 \end{equation}
-where $d_i(A) \defeq \sum_j A_{ij}$ indicates the degree (sum of incident edge-weights) 
+where $d_i(A) \defeq \sum_j A_{ij}$ denotes the degree (sum of incident edge-weights) 
 of $i$ in $A$. Treating $d(\cdot) \defeq {[d_i(\cdot)]}_{i=1}^n$ as a vector in 
 $\R^n_+$ yields the optimal solution to \cref{optweight}:
 \begin{equation}
@@ -227,7 +229,7 @@ $\mu^* < 1$, and the resulting combination retains the full connectivity structu
 the unweighted $R^+$ (\cref{pathmatrix}).
 
 \subsection{Edge weighting and feature fusion}
-The construction above relies upon a single feature representation $X$ to 
+The construction above relies upon a single feature representation to 
 determine the self-similarity structure, and uses constant edge weights for the
 repetition and local edges.  This can be generalized to support
 feature-weighted edges by replacing $R'$ with a masked similarity matrix:
@@ -252,23 +254,23 @@ descriptors: harmonic features for detecting long-range repeating forms, and tim
 features for detecting local consistency.  We assume that these features are
 respectively supplied in the form of affinity matrices $S^\text{rep}$ and
 $S^\text{loc}$.  Combining these affinities with the detected repetition structure and
-optimal weighting, we arrive at the \emph{sequence-augmented affinity matrix} $A$:
+optimal weighting yields the \emph{sequence-augmented affinity matrix} $A$:
 \begin{equation}
 A_{ij} \defeq \mu R'_{ij} S^\text{rep}_{ij} + (1-\mu) \Delta_{ij} S^\text{loc}_{ij},\label{saam}
 \end{equation}
 where $R'$ is understood to be
 constructed solely from the repetition affinities $S^\text{rep}$, and $\mu$ is
-optimized by the~\eqref{optweight:solution} on the weighted affinity matrices.
+optimized by solving~\eqref{optweight:solution} with the weighted affinity matrices.
 
 
-\section{Algorithms}
+\section{Graph partitioning and structural analysis}
 
 The Laplacian is a fundamental tool in the field of spectral graph
 theory, as it can be interpreted as a discrete analog of a diffusion operator over the
 vertices of the graph, and its spectrum can be used to characterize 
-vertex connectivity~\cite{chung1997spectral}.  In this section, we describe in detail
-how spectral clustering can be used to analyze the repetition graph constructed in the
-previous section.
+vertex connectivity~\cite{chung1997spectral}.  This section describes in detail
+how spectral clustering can be used to analyze and partition the repetition graph 
+constructed in the previous section, and reveal musical structure.
 
 \subsection{Background: spectral clustering}
 Let $D$ denote the diagonal \emph{degree matrix} of $A$: 
@@ -280,24 +282,21 @@ L \defeq I - D^{-1/2} A D^{-1/2}.\label{symlaplacian}
 
 The Laplacian forms the basis of spectral clustering, in which vertices are
 represented in terms of the eigenvectors of $L$~\cite{von2007tutorial}.  More
-specifically, to cluster a dataset into $m$ clusters, each point $t$ is represented as
+specifically, to partition a graph into $m$ components, each point $t$ is represented as
 the vector of the $t$th coordinates of the first $m$ eigenvectors of $L$,
 corresponding to the $m$ smallest eigenvalues.\footnote{An additional
 length-normalization is applied to each vector, to correct for scaling introduced by
 the symmetric normalized Laplacian~\cite{von2007tutorial}.}
-The motivation for its use stems from the observation that the multiplicity of the bottom
-eigenvalue $\lambda_0 = 0$ corresponds to the number of connected components in a
-graph, and the corresponding eigenvectors $y_i \in \R^n$ encode the component
-membership.
+The motivation for this method stems from the observation that the multiplicity of the 
+bottom eigenvalue $\lambda_0 = 0$ corresponds to the number of connected components in a
+graph, and the corresponding eigenvectors encode component memberships amongst vertices.
 
-In the non-ideal case, the graph is fully connected, so
-$\lambda_0$ has multiplicity 1, and the bottom eigenvector $y_0$ trivially encodes 
-membership in the graph. 
+In the non-ideal case, the graph is fully connected, so $\lambda_0$ has multiplicity 1, 
+and the bottom eigenvector trivially encodes membership in the graph. 
 However, in the case of $A$, we expect there to be many components
 with high intra-connectivity and relatively small inter-connectivity at the
 transition points between sections.  Spectral clustering can be viewed as an approximation 
-method for finding normalized graph cuts~\cite{von2007tutorial}, and it is well-suited to detecting
-and pruning these weak links.
+method for finding normalized graph cuts~\cite{von2007tutorial}, and it is well-suited to detecting and pruning these weak links.
 
 \Cref{recurrence} illustrates an example of the encoding produced by spectral
 decomposition of $L$.  Although the first eigenvector (column) is uninformative, 
@@ -321,41 +320,40 @@ components encode refinements.\label{recurrence}}
 \begin{figure*}[t]
 \centering
 \includegraphics[width=0.95\textwidth]{figs/lowrank}
-\caption{Pair-wise frame similarity ($Y\trans Y$) using the first $10$ components for \emph{The Beatles --- Come Together}.  The first
+\caption{Pair-wise frame similarities $\left(YY\trans\right)$ using the first $10$ components for \emph{The Beatles --- Come Together}.  The first
 (trivial) component ($m=1$) captures the entire song, and the second ($m=2$) separates
 the outro (final vamp) from the rest of the song.  
 Subsequent refinements separate the solo, refrain, verse, and outro, and then individual measures.\label{lowrank}}
 \end{figure*}
 
 To apply spectral clustering, we will use $k$-means clustering with the (normalized) 
-eigenvectors $Y \in \R^{n \times n}$ as features, where $M > 0$ is a 
-specified maximum number of structural components types.  Varying $M$ --- equivalently, 
+eigenvectors $Y \in \R^{n \times M}$ as features, where $M > 0$ is a 
+specified maximum number of structural component types.  Varying $M$ --- equivalently, 
 the dimension of the representation --- directly controls the granularity of 
 the resulting segmentation.
 
 
 \subsection{Boundary detection}
 For a fixed number of segment types $m$, segment boundaries can estimated 
-by clustering the columns of $Y$ after truncating to the first $m$ dimensions.
+by clustering the rows of $Y$ after truncating to the first $m$ dimensions.
 After clustering, segment boundaries are detected by searching for change-points in
-the cluster assignments of $Y_{\cdot,t}$ and $Y_{\cdot,t+1}$.  This method is
-formalized in \Cref{bd}.
+the cluster assignments.  This method is formalized in \Cref{bd}.
 Note that the number of segment \emph{types} is distinct from the number of \emph{segments} because a single 
 type (\eg, verse) may repeat multiple times throughout the track.
 
 \begin{algorithm}[t]
 \caption{Boundary detection\label{bd}}
 \begin{algorithmic}[1]
-\REQUIRE{Repetition features $Y \in \R^{m \times n}$, }
+\REQUIRE{Laplacian eigenvectors $Y \in \R^{n \times m}$, }
 \ENSURE{Boundaries $b$, segment labels $c \in {[m]}^n$}
 \item[]
 \item[]
 {\sc Boundary-Detect}$(Y)$
-    \STATE{$\hat{y}_t \leftarrow Y_{\cdot, t} / \|Y_{\cdot, t}\|$}
-    \COMMENT{Normalize columns $Y_{\cdot,t}$}
-    \STATE{Run $k$-means on ${\{\hat{y}_t\}}_{i=1}^n$ with $k=m$}
-    \STATE{Let $c_t$ denote the cluster containing $\hat{y}_t$}
-    \STATE{$b \leftarrow \{t \given c_t \neq c_{t+1}\}$} 
+    \STATE{$\hat{y}_i \leftarrow Y_{i, \cdot} / \|Y_{i, \cdot}\|$}
+    \COMMENT{Normalize each row $Y_{i, \cdot}$}
+    \STATE{Run $k$-means on ${\{\hat{y}_i\}}_{i=1}^n$ with $k=m$}
+    \STATE{Let $c_i$ denote the cluster containing $\hat{y}_i$}
+    \STATE{$b \leftarrow \{i \given c_i \neq c_{i+1}\}$} 
     \RETURN{$(b, c)$}
 \end{algorithmic}
 \end{algorithm}
@@ -404,7 +402,8 @@ maximum number of segment types: $M$}
 \ENSURE{Boundaries $B^m$, frame labels $C^m$ for ${m \in 2\dots M}$}
 \item[]
 \item[]
-{\sc LSD}$(S^\text{rep}, S^\text{loc})$
+% {\sc LSD}$(S^\text{rep}, S^\text{loc}, M)$
+{\sc LSD}$(S^\text{rep}, S^\text{loc}, M)$
 % \STATE{$R' \leftarrow $ filtered recurrence matrix of $S^\text{rep}$ (\cref{filtered-rep})}
 \STATE{$R \leftarrow $ \cref{unfiltered-rep} on $S^\text{rep}$} \COMMENT{Recurrence
 detection}
