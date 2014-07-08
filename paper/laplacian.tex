@@ -216,8 +216,8 @@ following quadratic optimization:
 \begin{equation}
 \min_{\mu \in [0, 1]} \frac{1}{2} \sum_i {(\mu d_i(R') - (1 - \mu)d_i(\Delta))}^2,\label{optweight}
 \end{equation}
-where $d_i(\Xi) \defeq \sum_j \Xi_{ij}$ denotes the degree (sum of incident edge-weights) 
-of $i$ in $A$. Treating $d(\cdot) \defeq {[d_i(\cdot)]}_{i=1}^n$ as a vector in 
+where $d_i(G) \defeq \sum_j G_{ij}$ denotes the degree (sum of incident edge-weights) 
+of $i$ in $G$. Treating $d(\cdot) \defeq {[d_i(\cdot)]}_{i=1}^n$ as a vector in 
 $\R^n_+$ yields the optimal solution to \cref{optweight}:
 \begin{equation}
 \mu^* = \frac{\langle d(\Delta), d(R') + d(\Delta)\rangle}{\|d(R') +
