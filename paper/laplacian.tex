@@ -223,10 +223,9 @@ $\R^n_+$ yields the optimal solution to \cref{optweight}:
 \mu^* = \frac{\langle d(\Delta), d(R') + d(\Delta)\rangle}{\|d(R') +
 d(\Delta)\|^2}.\label{optweight:solution}
 \end{equation}
-Note that because $\Delta$ is fully connected, it follows that $\|d(\Delta)\|^2 > 0$,
-which implies $\mu^* > 0$. Similarly, if $R'$ contains at least one edge, then 
-$\mu^* < 1$, and the resulting combination retains the full connectivity structure of
-the unweighted $R^+$ (\cref{pathmatrix}).
+Note that because $\Delta$ is non-empty (contains at least one edge), it follows that $\|d(\Delta)\|^2 > 0$,
+which implies $\mu^* > 0$. Similarly, if $R'$ is non-empty, then $\mu^* < 1$, and the resulting combination 
+retains the full connectivity structure of the unweighted $R^+$ (\cref{pathmatrix}).
 
 \subsection{Edge weighting and feature fusion}
 The construction above relies upon a single feature representation to 
