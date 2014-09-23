@@ -75,10 +75,10 @@ def hp_sep(y):
 def get_beats(y, sr, hop_length):
     
     odf = librosa.onset.onset_strength(y=y, sr=sr, hop_length=hop_length, aggregate=np.median, n_mels=128)
-    bpm, beats = librosa.beat.beat_track(onsets=odf, sr=sr, hop_length=hop_length, start_bpm=120)
+    bpm, beats = librosa.beat.beat_track(onset_envelope=odf, sr=sr, hop_length=hop_length, start_bpm=120)
     
     if bpm < MIN_TEMPO:
-        bpm, beats = librosa.beat.beat_track(onsets=odf, sr=sr, hop_length=hop_length, bpm=2*bpm)
+        bpm, beats = librosa.beat.beat_track(onset_envelope=odf, sr=sr, hop_length=hop_length, bpm=2*bpm)
         
     return bpm, beats
 
@@ -104,7 +104,7 @@ def features(filename):
 
     print '\t[5/5] generating MFCC'
     S = librosa.feature.melspectrogram(y=y, sr=sr, hop_length=HOP_LENGTH, n_mels=N_MELS)
-    M2 = librosa.feature.mfcc(librosa.logamplitude(S), n_mfcc=N_MFCC)
+    M2 = librosa.feature.mfcc(S=librosa.logamplitude(S), n_mfcc=N_MFCC)
 
     n = min(M1.shape[1], M2.shape[1])
     
@@ -454,7 +454,7 @@ def do_segmentation(X, beats, parameters):
 
     # Get the raw recurrence plot
     Xpad = np.pad(X_rep, [(0,0), (N_STEPS, 0)], mode='edge')
-    Xs = librosa.segment.stack_memory(Xpad, n_steps=N_STEPS)[:, N_STEPS:]
+    Xs = librosa.feature.stack_memory(Xpad, n_steps=N_STEPS)[:, N_STEPS:]
 
     k_link = 1 + int(np.ceil(2 * np.log2(X_rep.shape[1])))
     R = librosa.segment.recurrence_matrix(  Xs, 
