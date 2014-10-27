@@ -566,10 +566,10 @@ def process_arguments():
                             default =   None,
                             help    =   'Number of segment types.  Leave blank to auto-detect.')
 
-    parser.add_argument(    '-e', '--entropy',
+    parser.add_argument(    '--median',
                             dest    =   'median',
-                            action  =   'store_false',
-                            default =   True,
+                            action  =   'store_true',
+                            default =   False,
                             help    =   'use entropy optimization instead of median deviation')
 
     parser.add_argument(    'input_song',
