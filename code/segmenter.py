@@ -446,7 +446,6 @@ def median_partition(Lf, k_min, k_max, beats):
         med_diff = np.median(durations)
 
         score = -np.mean(np.abs(np.log(durations) - np.log(med_diff)))
-        print '\t{:d}: score={:.3f}'.format(n_types, score)
         
         if score > best_score and feasible:
             best_boundaries = boundaries
