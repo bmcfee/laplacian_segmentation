@@ -25,15 +25,10 @@ import sklearn.cluster
 import librosa
 
 # Suppress neighbor links within REP_WIDTH beats of the current one
-REP_WIDTH=3
+REP_WIDTH = 3
 
 # Only consider repetitions of at least (FILTER_WIDTH-1)/2
-FILTER_WIDTH=1 + 2 * 8
-
-# How much mass should we put along the +- diagonals?  We don't want this to influence nodes with high degree
-# If we set the kernel weights appropriately, most edges should have weight >= exp(-0.5)
-# Let's set the ridge flow to a small constant
-RIDGE_FLOW = np.exp(-2.0)
+FILTER_WIDTH = 1 + 2 * 8
 
 # How much state to use?
 N_STEPS = 2
@@ -43,77 +38,128 @@ N_MELS = 128
 N_MFCC = 13
 
 # Which similarity metric to use?
-METRIC='sqeuclidean'
+METRIC = 'sqeuclidean'
 
 # Sample rate for signal analysis
-SR=22050
+SR = 22050
 
 # Hop length for signal analysis
-HOP_LENGTH=512
+HOP_LENGTH = 512
 
 # Maximum number of structural components to consider
-MAX_REP=10
+MAX_REP = 10
 
 # Minimum and maximum average segment duration
-MIN_SEG=10.0
-MAX_SEG=30.0
+MIN_SEG = 10.0
+MAX_SEG = 30.0
 
-# Minimum tempo threshold; if we dip below this, double the bpm estimator and resample
-MIN_TEMPO=70.0
+# Minimum tempo threshold.
+# If we dip below this, double the starting tempo and try again
+MIN_TEMPO = 70.0
 
 # Minimum duration (in beats) of a "non-repeat" section
 MIN_NON_REPEATING = (FILTER_WIDTH - 1) / 2
 
+# Pre-compute label identifiers for the detected segments
 SEGMENT_NAMES = list(string.ascii_uppercase)
 for x in string.ascii_uppercase:
     SEGMENT_NAMES.extend(['%s%s' % (x, y) for y in string.ascii_lowercase])
 
+
 def get_beats(y, sr, hop_length):
-    
-    odf = librosa.onset.onset_strength(y=y, sr=sr, hop_length=hop_length, aggregate=np.median, n_mels=128)
-    bpm, beats = librosa.beat.beat_track(onset_envelope=odf, sr=sr, hop_length=hop_length, start_bpm=120)
-    
+    '''Extract beats from an audio time series.
+
+    :parameters:
+        - y : np.ndarray [shape=(n,)]
+          Audio time series
+
+        - sr : int > 0
+          Sampling rate of y
+
+        - hop_length : int > 0
+          Number of samples to advance in each frame
+
+    :returns:
+        - tempo : float > 0
+          Tempo in beats per minute
+
+        - beats : np.ndarray [shape=(m,)]
+          Positions (frame numbers) of detected beat events
+    '''
+
+    onset_env = librosa.onset.onset_strength(y=y,
+                                             sr=sr,
+                                             hop_length=hop_length,
+                                             aggregate=np.median,
+                                             n_mels=128)
+
+    bpm, beats = librosa.beat.beat_track(onset_envelope=onset_env,
+                                         sr=sr,
+                                         hop_length=hop_length,
+                                         start_bpm=120)
+
     if bpm < MIN_TEMPO:
-        bpm, beats = librosa.beat.beat_track(onset_envelope=odf, sr=sr, hop_length=hop_length, bpm=2*bpm)
-        
+        bpm, beats = librosa.beat.beat_track(onset_envelope=onset_env,
+                                             sr=sr,
+                                             hop_length=hop_length,
+                                             bpm=2*bpm)
+
     return bpm, beats
+
 
 def features(filename):
     print '\t[1/5] loading audio'
     y, sr = librosa.load(filename, sr=SR)
-    
+
     print '\t[2/5] Separating harmonic and percussive signals'
     y_perc, y_harm = librosa.effects.hpss(y)
-    
+
     print '\t[3/5] detecting beats'
     bpm, beats = get_beats(y=y_perc, sr=sr, hop_length=HOP_LENGTH)
-    
+
     print '\t[4/5] generating CQT'
-    M1 = np.abs(librosa.cqt(y=y_harm, 
-                            sr=sr, 
-                            hop_length=HOP_LENGTH, 
-                            bins_per_octave=12, 
-                            fmin=librosa.midi_to_hz(24), 
-                            n_bins=72))
-    
-    M1 = librosa.logamplitude(M1**2.0, ref_power=np.max)
+    X_cqt = librosa.cqt(y=y_harm,
+                        sr=sr,
+                        hop_length=HOP_LENGTH,
+                        bins_per_octave=12,
+                        fmin=librosa.midi_to_hz(24),
+                        n_bins=72)
 
+    # Compute log CQT power
+    X_cqt = librosa.logamplitude(X_cqt**2.0, ref_power=np.max)
+
+    # Compute MFCCs
     print '\t[5/5] generating MFCC'
-    S = librosa.feature.melspectrogram(y=y, sr=sr, hop_length=HOP_LENGTH, n_mels=N_MELS)
-    M2 = librosa.feature.mfcc(S=librosa.logamplitude(S), n_mfcc=N_MFCC)
+    X_melspec = librosa.feature.melspectrogram(y=y,
+                                               sr=sr,
+                                               hop_length=HOP_LENGTH,
+                                               n_mels=N_MELS)
 
-    n = min(M1.shape[1], M2.shape[1])
-    
+    X_timbre = librosa.feature.mfcc(S=librosa.logamplitude(X_melspec),
+                                    n_mfcc=N_MFCC)
+
+    # Resolve any timing discrepancies due to CQT downsampling
+    n = min(X_cqt.shape[1], X_timbre.shape[1])
+
+    # Trim the beat detections to fit within the shape of X*
     beats = beats[beats < n]
-    
+
+    # Pad on a frame=0 beat for synchronization purposes
     beats = np.unique(np.concatenate([[0], beats]))
-    
-    times = librosa.frames_to_time(beats, sr=sr, hop_length=HOP_LENGTH)
-    
-    times = np.concatenate([times, [float(len(y)) / sr]])
-    M1 = librosa.feature.sync(M1, beats, aggregate=np.median)
-    M2 = librosa.feature.sync(M2, beats, aggregate=np.mean)
-    return (M1, M2), times
+
+    # Convert beat frames to beat times
+    beat_times = librosa.frames_to_time(beats, sr=sr, hop_length=HOP_LENGTH)
+
+    # Take on an end-of-track marker.  This is necessary if we want
+    # the output intervals to span the entire track.
+    beat_times = np.concatenate([beat_times, [float(len(y)) / sr]])
+
+    # Synchronize the feature matrices
+    X_cqt = librosa.feature.sync(X_cqt, beats, aggregate=np.median)
+    X_timbre = librosa.feature.sync(X_timbre, beats, aggregate=np.mean)
+
+    return X_cqt, X_timbre, beat_times
+
 
 def save_segments(outfile, boundaries, beats, labels=None):
 
@@ -122,10 +168,13 @@ def save_segments(outfile, boundaries, beats, labels=None):
 
     times = beats[boundaries]
     with open(outfile, 'w') as f:
-        for idx, (start, end, lab) in enumerate(zip(times[:-1], times[1:], labels), 1):
+        for idx, (start, end, lab) in enumerate(zip(times[:-1],
+                                                    times[1:],
+                                                    labels), 1):
             f.write('%.3f\t%.3f\t%s\n' % (start, end, lab))
-    
+
     pass
+
 
 def get_num_segs(duration):
     kmin = max(2, np.floor(duration / MAX_SEG).astype(int))
@@ -133,89 +182,118 @@ def get_num_segs(duration):
 
     return kmin, kmax
 
-def clean_reps(S):
-    # Median filter with reflected padding
-    Sf = np.pad(S, [(0, 0), (FILTER_WIDTH, FILTER_WIDTH)], mode='reflect')
-    Sf = scipy.signal.medfilt2d(Sf, kernel_size=(1, FILTER_WIDTH))
-    Sf = Sf[:, FILTER_WIDTH:-FILTER_WIDTH]
+
+def median_padded(S, width):
+    '''
+    Apply horizontal median filter to a matrix S with reflection padding.
+
+    This prevents winnowing of values at the left- and right-edges of S.
+
+    :parameters:
+        - S : np.ndarray [shape=(d, n)]
+          The input matrix to filter
+
+        - width : int > 0
+          The width of the median filter
+
+    :returns:
+        - S_filtered : np.ndarray [shape=S.shape]
+          The filtered matrix
+    '''
+
+    # First, make a reflection-padded copy of S
+    Sf = np.pad(S, [(0, 0), (width, width)], mode='reflect')
+
+    # Then, apply the median filter
+    Sf = scipy.signal.medfilt2d(Sf, kernel_size=(1, width))
+
+    # Finally, trim the padding
+    Sf = Sf[:, width:-width]
     return Sf
+
 
 def sym_laplacian(A):
     Dinv = np.sum(A, axis=1)**-1.0
-    
+
     Dinv[~np.isfinite(Dinv)] = 1.0
-    
+
     Dinv = np.diag(Dinv**0.5)
 
     L = np.eye(len(A)) - Dinv.dot(A.dot(Dinv))
-    
+
     return L
 
-def weighted_ridge(A_rep, A_loc):
+
+def combine_graphs(A_rep, A_loc):
     ''' Find mu such that mu * deg(A_rep, i) ~= (1-mu) * deg(A_loc, i)
-    
+
     Goal: avg flow should be balanced between the repeater graph and the sequence graph
 
     '''
     d1 = np.sum(A_rep, axis=1)
     d2 = np.sum(A_loc, axis=1)
-    
+
     ds = d1 + d2
     mu = d2.dot(ds) / np.dot(ds, ds)
     return mu * A_rep + (1 - mu) * A_loc
+
 
 def factorize(L, k=20):
     e_vals, e_vecs = scipy.linalg.eig(L)
     e_vals = e_vals.real
     e_vecs = e_vecs.real
     idx    = np.argsort(e_vals)
-    
+
     e_vals = e_vals[idx]
     e_vecs = e_vecs[:, idx]
-    
+
     if len(e_vals) < k + 1:
         k = -1
 
     return e_vecs[:, :k].T, e_vals[k] - e_vals[k-1]
 
+
 def label_rep_sections(X, boundaries, n_types):
     # Classify each segment centroid
-    Xs = librosa.feature.sync(X, boundaries)
-    
+    X_rep_stack = librosa.feature.sync(X, boundaries)
+
     C = sklearn.cluster.KMeans(n_clusters=n_types, tol=1e-8)
-    
-    labels = C.fit_predict(Xs.T)
-    
+
+    labels = C.fit_predict(X_rep_stack.T)
+
     return zip(boundaries[:-1], boundaries[1:]), labels
+
 
 def fixed_partition(Lf, n_types):
 
     # Build the affinity matrix on the first n_types-1 repetition features
     Y = librosa.util.normalize(Lf[:n_types].T, norm=2, axis=1)
 
-    # Try to label the data with n_types 
+    # Try to label the data with n_types
     C = sklearn.cluster.KMeans(n_clusters=n_types, tol=1e-10, n_init=100)
     labels = C.fit_predict(Y)
-        
+
     boundaries = 1 + np.asarray(np.where(labels[:-1] != labels[1:])).reshape((-1,))
-        
+
     boundaries = np.unique(np.concatenate([[0], boundaries, [len(labels)]]))
 
     intervals, labels = label_rep_sections(Y.T, boundaries, n_types)
-    
+
     return boundaries, labels
 
+
 def label_entropy(labels):
-    
+
     values = np.unique(labels)
     hits = np.zeros(len(values))
-    
+
     for v in values:
         hits[v] = np.sum(values == v)
-        
+
     hits = hits / hits.sum()
-    
+
     return scipy.stats.entropy(labels)
+
 
 def label_clusterer(Lf, k_min, k_max):
     best_score      = -np.inf
@@ -224,14 +302,14 @@ def label_clusterer(Lf, k_min, k_max):
     Y_best          = Lf[:1].T
 
     label_dict = {}
-    
+
     # The trivial solution
     label_dict[1]   = np.zeros(Lf.shape[1])
 
     for n_types in range(2, 1+len(Lf)):
         Y = librosa.util.normalize(Lf[:n_types].T, norm=2, axis=1)
 
-        # Try to label the data with n_types 
+        # Try to label the data with n_types
         C = sklearn.cluster.KMeans(n_clusters=n_types, n_init=100)
         labels = C.fit_predict(Y)
         label_dict[n_types] = labels
@@ -240,7 +318,7 @@ def label_clusterer(Lf, k_min, k_max):
         boundaries = 1 + np.asarray(np.where(labels[:-1] != labels[1:])).reshape((-1,))
 
         boundaries = np.unique(np.concatenate([[0], boundaries, [len(labels)]]))
-        
+
         # boundaries now include start and end markers; n-1 is the number of segments
         feasible = (len(boundaries) > k_min)
 
@@ -260,8 +338,9 @@ def label_clusterer(Lf, k_min, k_max):
         Y_best          = librosa.util.normalize(Lf[:best_n_types].T, norm=2, axis=1)
 
     intervals, best_labels = label_rep_sections(Y_best.T, best_boundaries, best_n_types)
-    
+
     return best_boundaries, best_labels
+
 
 def median_partition(Lf, k_min, k_max, beats):
     best_score      = -np.inf
@@ -270,14 +349,14 @@ def median_partition(Lf, k_min, k_max, beats):
     Y_best          = Lf[:1].T
 
     label_dict = {}
-    
+
     # The trivial solution
     label_dict[1]   = np.zeros(Lf.shape[1])
 
     for n_types in range(2, 1+len(Lf)):
         Y = librosa.util.normalize(Lf[:n_types].T, norm=2, axis=1)
 
-        # Try to label the data with n_types 
+        # Try to label the data with n_types
         C = sklearn.cluster.KMeans(n_clusters=n_types, n_init=100)
         labels = C.fit_predict(Y)
         label_dict[n_types] = labels
@@ -286,14 +365,14 @@ def median_partition(Lf, k_min, k_max, beats):
         boundaries = 1 + np.asarray(np.where(labels[:-1] != labels[1:])).reshape((-1,))
 
         boundaries = np.unique(np.concatenate([[0], boundaries, [len(labels)]]))
-        
+
         # boundaries now include start and end markers; n-1 is the number of segments
         feasible = (len(boundaries) > k_min)
         durations = np.diff([beats[x] for x in boundaries])
         med_diff = np.median(durations)
 
         score = -np.mean(np.abs(np.log(durations) - np.log(med_diff)))
-        
+
         if score > best_score and feasible:
             best_boundaries = boundaries
             best_n_types    = n_types
@@ -308,8 +387,9 @@ def median_partition(Lf, k_min, k_max, beats):
         Y_best          = librosa.util.normalize(Lf[:best_n_types].T, norm=2, axis=1)
 
     intervals, best_labels = label_rep_sections(Y_best.T, best_boundaries, best_n_types)
-    
+
     return best_boundaries, best_labels
+
 
 def estimate_bandwidth(D, k):
     D_sort = np.sort(D, axis=1)
@@ -320,68 +400,61 @@ def estimate_bandwidth(D, k):
     sigma = np.mean(D_sort[:, 1+k])
     return sigma
 
+
 def self_similarity(X, k):
     D = scipy.spatial.distance.cdist(X.T, X.T, metric=METRIC)
     sigma = estimate_bandwidth(D, k)
     A = np.exp(-0.5 * (D / sigma))
     return A
 
-def local_similarity(X):
-    
-    d, n = X.shape
-    
-    dists = np.sum(np.diff(X, axis=1)**2, axis=0)
-    # dists[i] = ||X[i] - X[i-1]||
-    
-    sigma = np.mean(dists)
-    
-    rbf = np.exp(-0.5 * (dists / sigma))
-    
-    A = np.diag(rbf, k=1) + np.diag(rbf, k=-1)
-    return A
 
-def do_segmentation(X, beats, parameters):
+def do_segmentation(X_rep, X_loc, beats, parameters):
 
-    X_rep, X_loc = X
     # Find the segment boundaries
     print '\tpredicting segments...'
-    k_min, k_max  = get_num_segs(beats[-1])
+    k_min, k_max = get_num_segs(beats[-1])
 
     # Get the raw recurrence plot
-    Xpad = np.pad(X_rep, [(0,0), (N_STEPS, 0)], mode='edge')
-    Xs = librosa.feature.stack_memory(Xpad, n_steps=N_STEPS)[:, N_STEPS:]
+    X_rep_pad = np.pad(X_rep, [(0, 0), (N_STEPS, 0)], mode='edge')
+    X_rep_stack = librosa.feature.stack_memory(X_rep_pad,
+                                               n_steps=N_STEPS)[:, N_STEPS:]
 
+    # Compute the number of nearest neighbor links to generate
     k_link = 1 + int(np.ceil(2 * np.log2(X_rep.shape[1])))
-    R = librosa.segment.recurrence_matrix(  Xs, 
-                                            k=k_link, 
-                                            width=REP_WIDTH, 
-                                            metric=METRIC,
-                                            sym=True).astype(np.float32)
-    # Generate the repetition kernel
-    A_rep = self_similarity(Xs, k=k_link)
 
-    # And the local path kernel
+    # Generate the repetition kernel
+    A_rep = self_similarity(X_rep_stack, k=k_link)
+
+    # And the timbre similarity kernel
     A_loc = self_similarity(X_loc, k=k_link)
 
-    # Mask the self-similarity matrix by recurrence
-    S = librosa.segment.structure_feature(R)
+    # Build the harmonic recurrence matrix
+    recurrence = librosa.segment.recurrence_matrix(X_rep_stack,
+                                                   k=k_link,
+                                                   width=REP_WIDTH,
+                                                   metric=METRIC,
+                                                   sym=True).astype(np.float32)
 
-    Sf = clean_reps(S)
+    # filter the recurrence plot by diagonal majority vote
+    lag_matrix = librosa.segment.structure_feature(recurrence)
+    lag_filtered = median_padded(lag_matrix, FILTER_WIDTH)
+    rec_filtered = librosa.segment.structure_feature(lag_filtered,
+                                                     inverse=True)
 
-    # De-skew
-    Rf = librosa.segment.structure_feature(Sf, inverse=True)
+    # Symmetrize the filtered matrix
+    rec_filtered = np.maximum(rec_filtered, rec_filtered.T)
 
-    # Symmetrize by force
-    Rf = np.maximum(Rf, Rf.T)
-
-    # Suppress the diagonal
-    Rf[np.diag_indices_from(Rf)] = 0
+    # Suppress the main diagonal
+    rec_filtered[np.diag_indices_from(rec_filtered)] = 0
 
     # We can jump to a random neighbor, or +- 1 step in time
     # Call it the infinite jukebox matrix
-    T = weighted_ridge(Rf * A_rep, (np.eye(len(A_loc), k=1) + np.eye(len(A_loc),k=-1)) * A_loc)
+    A_combined = combine_graphs(rec_filtered * A_rep,
+                                (np.eye(len(A_loc), k=1)
+                                 + np.eye(len(A_loc), k=-1)) * A_loc)
+
     # Get the graph laplacian
-    L = sym_laplacian(T)
+    L = sym_laplacian(A_combined)
 
     # Get the bottom k eigenvectors of L
     Lf = factorize(L, k=1+MAX_REP)[0]
@@ -397,44 +470,52 @@ def do_segmentation(X, beats, parameters):
     print '\tsaving output to ', parameters['output_file']
     save_segments(parameters['output_file'], boundaries, beats, labels)
 
-def process_arguments():
+
+def process_arguments(args):
+    '''Argument parser.
+
+    Returns a dictionary of parameters extracted from the command line.
+    '''
+
     parser = argparse.ArgumentParser(description='Music segmentation')
 
-    parser.add_argument(    '-v', '--verbose',
-                            dest    =   'verbose',
-                            action  =   'store_true',
-                            default =   False,
-                            help    =   'verbose output')
+    parser.add_argument('-v', '--verbose',
+                        dest='verbose',
+                        action='store_true',
+                        default=False,
+                        help='verbose output')
 
-    parser.add_argument(    '-m', '--num-types',
-                            dest    =   'num_types',
-                            action  =   'store',
-                            type    =   int,
-                            default =   None,
-                            help    =   'Number of segment types.  Leave blank to auto-detect.')
+    parser.add_argument('-m', '--num-types',
+                        dest='num_types',
+                        action='store',
+                        type=int,
+                        default=None,
+                        help='fix the number of segment types')
 
-    parser.add_argument(    '--median',
-                            dest    =   'median',
-                            action  =   'store_true',
-                            default =   False,
-                            help    =   'use entropy optimization instead of median deviation')
+    parser.add_argument('--median',
+                        dest='median',
+                        action='store_true',
+                        default=False,
+                        help='select partition by minimizing median deviation')
 
-    parser.add_argument(    'input_song',
-                            action  =   'store',
-                            help    =   'path to input audio data')
+    parser.add_argument('input_song',
+                        action='store',
+                        help='path to input audio data')
 
-    parser.add_argument(    'output_file',
-                            action  =   'store',
-                            help    =   'path to output segment file')
+    parser.add_argument('output_file',
+                        action='store',
+                        help='path to output segment file')
 
-    return vars(parser.parse_args(sys.argv[1:]))
+    return vars(parser.parse_args(args))
 
+
+# Main block here
 if __name__ == '__main__':
 
-    parameters = process_arguments()
+    parameters = process_arguments(sys.argv[1:])
 
     # Load the features
     print '- ', os.path.basename(parameters['input_song'])
-    X, beats    = features(parameters['input_song'])
+    X_cqt, X_timbre, beats = features(parameters['input_song'])
 
-    do_segmentation(X, beats, parameters)
+    do_segmentation(X_cqt, X_timbre, beats, parameters)
