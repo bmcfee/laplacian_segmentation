@@ -108,6 +108,22 @@ def get_beats(y, sr, hop_length):
 
 
 def features(filename):
+    '''Extract feature data for spectral clustering segmentation.
+
+    :parameters:
+        - filename : str
+            Path on disk to an audio file
+
+    :returns:
+        - X_cqt : np.ndarray [shape=(d1, n)]
+          A beat-synchronous log-power CQT matrix
+
+        - X_timbre : np.ndarray [shape=(d2, n)]
+          A beat-synchronous MFCC matrix
+
+        - beat_times : np.ndarray [shape=(n, 2)]
+          Timing of beat intervals
+    '''
     print '\t[1/5] loading audio'
     y, sr = librosa.load(filename, sr=SR)
 
@@ -154,19 +170,23 @@ def features(filename):
     # the output intervals to span the entire track.
     beat_times = np.concatenate([beat_times, [float(len(y)) / sr]])
 
+    beat_intervals = np.asarray(zip(beat_times[:-1], beat_times[1:]))
+
     # Synchronize the feature matrices
     X_cqt = librosa.feature.sync(X_cqt, beats, aggregate=np.median)
     X_timbre = librosa.feature.sync(X_timbre, beats, aggregate=np.mean)
 
-    return X_cqt, X_timbre, beat_times
+    return X_cqt, X_timbre, beat_intervals
 
 
-def save_segments(outfile, boundaries, beats, labels=None):
+def save_segments(outfile, boundaries, beat_intervals, labels=None):
 
     if labels is None:
         labels = [('Seg#%03d' % idx) for idx in range(1, len(boundaries))]
 
-    times = beats[boundaries]
+    times = [beat_intervals[interval, 0] for interval in boundaries[:-1]]
+    times.append(beat_intervals[-1, -1])
+
     with open(outfile, 'w') as f:
         for idx, (start, end, lab) in enumerate(zip(times[:-1],
                                                     times[1:],
@@ -176,11 +196,37 @@ def save_segments(outfile, boundaries, beats, labels=None):
     pass
 
 
-def get_num_segs(duration):
-    kmin = max(2, np.floor(duration / MAX_SEG).astype(int))
-    kmax = max(3, np.ceil(duration / MIN_SEG).astype(int))
+def get_num_segs(duration, min_seg, max_seg, k_min=2, k_max=3):
+    '''Estimate bounds on the number of segments from a track duration.
 
-    return kmin, kmax
+    :parameters:
+        - duration : float > 0
+          Track duration
+
+        - min_seg : float > 0
+          Minimum average segment duration
+
+        - max_seg : float > 0
+          Maximum average segment duration
+
+        - k_min : int > 0
+          Lower bound on k_min
+
+        - k_max : int > 0
+          Lower bound on k_max
+
+    :returns:
+        - k_min : int >= 2
+          Minimum number of segments
+
+        - k_max : int > k_min
+          Maximum number of segments
+    '''
+
+    k_min = max(k_min, np.floor(duration / max_seg).astype(int))
+    k_max = max(k_max, np.ceil(duration / min_seg).astype(int))
+
+    return k_min, k_max
 
 
 def median_padded(S, width):
@@ -326,7 +372,18 @@ def fixed_partition(Lf, n_types):
 
 
 def label_entropy(labels):
+    '''Estimate the entropy of an array of labels.
 
+    The underlying distribution is assumed to be iid multinomial.
+
+    :parameters:
+        - labels : np.array [shape=(n,)]
+            Array of labels
+
+    :returns:
+        - entropy : float >= 0
+            Entropy (in nats) of labels
+    '''
     values = np.unique(labels)
     hits = np.zeros(len(values))
 
@@ -385,7 +442,7 @@ def label_clusterer(Lf, k_min, k_max):
     return best_boundaries, best_labels
 
 
-def median_partition(Lf, k_min, k_max, beats):
+def median_partition(Lf, k_min, k_max, beat_intervals):
     best_score      = -np.inf
     best_boundaries = [0, Lf.shape[1]]
     best_n_types    = 1
@@ -411,7 +468,7 @@ def median_partition(Lf, k_min, k_max, beats):
 
         # boundaries now include start and end markers; n-1 is the number of segments
         feasible = (len(boundaries) > k_min)
-        durations = np.diff([beats[x] for x in boundaries])
+        durations = np.diff([beat_intervals[x, 0] for x in boundaries])
         med_diff = np.median(durations)
 
         score = -np.mean(np.abs(np.log(durations) - np.log(med_diff)))
@@ -451,7 +508,7 @@ def self_similarity(X, k):
     return A
 
 
-def lsd(X_rep, X_loc, beats, parameters):
+def lsd(X_rep, X_loc, beat_intervals, parameters):
     '''Laplacian structural decomposition.
 
     :parameters:
@@ -461,8 +518,8 @@ def lsd(X_rep, X_loc, beats, parameters):
         - X_loc : np.ndarray [shape=(d2, n)]
           Features to be used for generating local path links
 
-        - beats : np.ndarray [shape=(n,)]
-          Array of beat timings
+        - beat_interval : np.ndarray [shape=(n, 2)]
+          Array of beat interval timings
 
         - parameters : dict
           Parameter dictionary as constructed by process_arguments()
@@ -470,7 +527,7 @@ def lsd(X_rep, X_loc, beats, parameters):
 
     # Find the segment boundaries
     print '\tpredicting segments...'
-    k_min, k_max = get_num_segs(beats[-1])
+    k_min, k_max = get_num_segs(beat_intervals[-1, -1], MIN_SEG, MAX_SEG)
 
     # Get the raw recurrence plot
     X_rep_pad = np.pad(X_rep, [(0, 0), (N_STEPS, 0)], mode='edge')
@@ -524,13 +581,19 @@ def lsd(X_rep, X_loc, beats, parameters):
         boundaries, labels = fixed_partition(L_factors,
                                              parameters['num_types'])
     elif parameters['median']:
-        boundaries, labels = median_partition(L_factors, k_min, k_max, beats)
+        boundaries, labels = median_partition(L_factors,
+                                              k_min,
+                                              k_max,
+                                              beat_intervals)
     else:
         boundaries, labels = label_clusterer(L_factors, k_min, k_max)
 
     # Output lab file
     print '\tsaving output to ', parameters['output_file']
-    save_segments(parameters['output_file'], boundaries, beats, labels)
+    save_segments(parameters['output_file'],
+                  boundaries,
+                  beat_intervals,
+                  labels)
 
 
 def process_arguments(args):
@@ -578,6 +641,6 @@ if __name__ == '__main__':
 
     # Load the features
     print '- ', os.path.basename(parameters['input_song'])
-    X_cqt, X_timbre, beats = features(parameters['input_song'])
+    X_cqt, X_timbre, beat_intervals = features(parameters['input_song'])
 
-    lsd(X_cqt, X_timbre, beats, parameters)
+    lsd(X_cqt, X_timbre, beat_intervals, parameters)
