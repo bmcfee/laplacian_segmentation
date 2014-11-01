@@ -68,10 +68,6 @@ SEGMENT_NAMES = list(string.ascii_uppercase)
 for x in string.ascii_uppercase:
     SEGMENT_NAMES.extend(['%s%s' % (x, y) for y in string.ascii_lowercase])
 
-def hp_sep(y):
-    D_h, D_p = librosa.decompose.hpss(librosa.stft(y))
-    return librosa.istft(D_h), librosa.istft(D_p)
-
 def get_beats(y, sr, hop_length):
     
     odf = librosa.onset.onset_strength(y=y, sr=sr, hop_length=hop_length, aggregate=np.median, n_mels=128)
@@ -87,7 +83,7 @@ def features(filename):
     y, sr = librosa.load(filename, sr=SR)
     
     print '\t[2/5] Separating harmonic and percussive signals'
-    y_perc, y_harm = hp_sep(y)
+    y_perc, y_harm = librosa.effects.hpss(y)
     
     print '\t[3/5] detecting beats'
     bpm, beats = get_beats(y=y_perc, sr=sr, hop_length=HOP_LENGTH)
@@ -144,60 +140,6 @@ def clean_reps(S):
     Sf = Sf[:, FILTER_WIDTH:-FILTER_WIDTH]
     return Sf
 
-def expand_transitionals(R, local=True):
-    '''Sometimes, a frame does not repeat.  
-    Sequences of non-repeating frames are bad news, so we'll link them up together as a transitional clique.
-    
-    input: 
-    
-      - filtered repetition matrix R
-    '''
-    
-    n = len(R)
-    R_out = R.copy()
-    
-    degree = np.sum(R, axis=0)
-    
-    start = None
-    
-    all_idx = []
-    
-    for i in range(n):
-        if start is not None:
-            # If we're starting a new repeating section,
-            # or we're at the end
-            if (i == n - 1) or (degree[i] > 0):
-                
-                # Fill in R_out[start:i, start:i]
-                idx = slice(start, i)
-                
-                if i - start >= MIN_NON_REPEATING:
-                    if local:
-                        # Add links for all unique pairs
-                        R_out[np.ix_(idx, idx)] = 1
-                        R_out[idx, idx] = 0
-                    else:
-                        all_idx.extend(range(start, i))
-                    
-                # reset the counter
-                start = None
-                
-        elif degree[i] == 0:
-            start = i
-    
-    if not local and all_idx:
-        # Add links for all unique pairs
-        R_out[np.ix_(all_idx, all_idx)] = 1
-        R_out[all_idx, all_idx] = 0
-        
-    return R_out
-
-def rw_laplacian(A):
-    Dinv = np.sum(A, axis=1)**-1.0
-    Dinv[~np.isfinite(Dinv)] = 1.0
-    L = np.eye(A.shape[0]) - (Dinv * A.T).T
-    return L
-
 def sym_laplacian(A):
     Dinv = np.sum(A, axis=1)**-1.0
     
@@ -208,48 +150,6 @@ def sym_laplacian(A):
     L = np.eye(len(A)) - Dinv.dot(A.dot(Dinv))
     
     return L
-
-def ridge(A):
-    
-    n = len(A)
-    
-    ridge_val = RIDGE_FLOW * np.ones(n-1)
-    
-    A_out = A.copy()
-    A_out[range(n-1), range(1,n)] = ridge_val
-    A_out[range(1,n), range(n-1)] = ridge_val
-    
-    return A_out
-
-def min_ridge(A, R):
-    R = R.astype(np.bool)
-    
-    n = len(A)
-    D = RIDGE_FLOW * np.ones(n)
-    for i in range(n):
-        idx = R[i]
-        if idx.any():
-            D[i] = np.mean(A[i, idx])
-
-    ridge_val = np.minimum(D[:-1], D[1:])
-    
-    A_out = A.copy()
-    A_out[range(n-1), range(1,n)] = ridge_val
-    A_out[range(1,n), range(n-1)] = ridge_val
-    
-    return A_out
-
-def local_ridge(A_rep, A_loc):
-    
-    n = len(A_rep)
-    
-    ridge_val = np.diag(A_loc, k=1)
-    
-    A_out = A_rep.copy()
-    A_out[range(n-1), range(1,n)] = ridge_val
-    A_out[range(1,n), range(n-1)] = ridge_val
-    
-    return A_out
 
 def weighted_ridge(A_rep, A_loc):
     ''' Find mu such that mu * deg(A_rep, i) ~= (1-mu) * deg(A_loc, i)
@@ -288,56 +188,6 @@ def label_rep_sections(X, boundaries, n_types):
     
     return zip(boundaries[:-1], boundaries[1:]), labels
 
-def cond_entropy(y_old, y_new):
-    ''' Compute the conditional entropy of y_old given y_new'''
-    
-    # P[i,j] = |y_old[i] = y_new[j]|
-    P = sklearn.metrics.cluster.contingency_matrix(y_old, y_new)
-    
-    # Normalize to form the joint distribution
-    P = P.astype(float) / len(y_old)
-    
-    # Marginalize
-    P_new = P.sum(axis=0)
-    
-    h_old_given_new = scipy.stats.entropy(P, base=2.0)
-    
-    return P_new.dot(h_old_given_new)
-
-def time_clusterer(Lf, k_min, k_max, times):
-
-    best_boundaries = [0, Lf.shape[1]]
-    best_n_types    = 1
-    Y_best          = Lf[:1].T
-
-    times = np.asarray(times)
-
-    for n_types in range(2, Lf.shape[0]):
-        # Build the affinity matrix on the first n_types-1 repetition features
-        Y = librosa.util.normalize(Lf[:n_types].T, norm=2, axis=1)
-        # Try to label the data with n_types 
-        C = sklearn.cluster.KMeans(n_clusters=n_types, tol=1e-10, n_init=100)
-        labels = C.fit_predict(Y)
-        
-        boundaries = 1 + np.asarray(np.where(labels[:-1] != labels[1:])).reshape((-1,))
-        
-        boundaries = np.unique(np.concatenate([[0], boundaries, [len(labels)]]))
-
-        segment_deltas = np.diff(times[boundaries])
-        
-        # Easier to compute this before filling it out
-        feasible = (np.mean(segment_deltas) >= MIN_SEG)# and (np.mean(segment_deltas) <= MAX_SEG)
-        
-        # Edge-case: always take at least 2 segment types
-        if feasible:
-            best_boundaries = boundaries
-            best_n_types    = n_types
-            Y_best          = Y
-    
-    intervals, labels = label_rep_sections(Y_best.T, best_boundaries, best_n_types)
-    
-    return best_boundaries, labels
-
 def fixed_partition(Lf, n_types):
 
     # Build the affinity matrix on the first n_types-1 repetition features
@@ -354,9 +204,6 @@ def fixed_partition(Lf, n_types):
     intervals, labels = label_rep_sections(Y.T, boundaries, n_types)
     
     return boundaries, labels
-
-def segment_speed(Y):
-    return np.mean(np.sum(np.abs(np.diff(Y, axis=1))**2, axis=0))
 
 def label_entropy(labels):
     
@@ -532,7 +379,7 @@ def do_segmentation(X, beats, parameters):
 
     # We can jump to a random neighbor, or +- 1 step in time
     # Call it the infinite jukebox matrix
-    T = weighted_ridge(Rf * A_rep, (np.eye(len(A_loc),k=1) + np.eye(len(A_loc),k=-1)) * A_loc)
+    T = weighted_ridge(Rf * A_rep, (np.eye(len(A_loc), k=1) + np.eye(len(A_loc),k=-1)) * A_loc)
     # Get the graph laplacian
     L = sym_laplacian(T)
 
