@@ -213,6 +213,18 @@ def median_padded(S, width):
 
 
 def sym_laplacian(A):
+    '''Compute the symmetric, normalized graph laplacian.
+
+    :parameters:
+      - A : np.ndarray >= 0 [shape=(n, n)]
+        A square, symmetric, non-negative matrix containing
+        affinities between items.
+
+    :returns:
+      - L : np.ndarray [shape=(n, n)]
+        The laplacian of A
+    '''
+
     Dinv = np.sum(A, axis=1)**-1.0
 
     Dinv[~np.isfinite(Dinv)] = 1.0
@@ -225,10 +237,27 @@ def sym_laplacian(A):
 
 
 def combine_graphs(A_rep, A_loc):
-    ''' Find mu such that mu * deg(A_rep, i) ~= (1-mu) * deg(A_loc, i)
+    ''' Find mu such that
 
-    Goal: avg flow should be balanced between the repeater graph and the sequence graph
+        mu * deg(A_rep, i) ~= (1-mu) * deg(A_loc, i)
 
+    This attempts to produce a weighted combination of A_rep and A_loc
+    such that a random walk on the combined graph has approximately equal
+    probability of transitioning through an edge from A_loc or A_rep.
+
+    :parameters:
+      - A_loc : np.ndarray >= 0 [shape=(n, n)]
+        A square, symmetric, non-negative matrix containing the
+        local path affinities.
+
+      - A_rep : np.ndarray >= 0 [shape=(n, n)]
+        A square, symmetric, non-negative matrix containing the
+        repetition affinities
+
+    :returns:
+      - A : np.ndarray >= 0 [shape=(n, n)]
+        The optimally weighted combination of A_rep and A_loc:
+          A = mu * A_rep + (1 - mu) * A_loc
     '''
     d1 = np.sum(A_rep, axis=1)
     d2 = np.sum(A_loc, axis=1)
@@ -239,10 +268,24 @@ def combine_graphs(A_rep, A_loc):
 
 
 def factorize(L, k=20):
+    '''Factorize a square matrix L into eigenvalues.
+
+    :parameters:
+        - L : np.ndarray [shape=(n,n)]
+          The matrix to be factorized
+
+        - k : int > 0
+          The maximum number of factors to return
+
+    :returns:
+        - e_vecs : np.ndarray [shape=(min(n, k), n)]
+          The eigenvectors of L as rows, sorted ascending
+          by corresponding eigenvalue
+    '''
     e_vals, e_vecs = scipy.linalg.eig(L)
     e_vals = e_vals.real
     e_vecs = e_vecs.real
-    idx    = np.argsort(e_vals)
+    idx = np.argsort(e_vals)
 
     e_vals = e_vals[idx]
     e_vecs = e_vecs[:, idx]
@@ -250,7 +293,7 @@ def factorize(L, k=20):
     if len(e_vals) < k + 1:
         k = -1
 
-    return e_vecs[:, :k].T, e_vals[k] - e_vals[k-1]
+    return e_vecs[:, :k].T
 
 
 def label_rep_sections(X, boundaries, n_types):
@@ -408,7 +451,22 @@ def self_similarity(X, k):
     return A
 
 
-def do_segmentation(X_rep, X_loc, beats, parameters):
+def lsd(X_rep, X_loc, beats, parameters):
+    '''Laplacian structural decomposition.
+
+    :parameters:
+        - X_rep : np.ndarray [shape=(d1, n)]
+          Features to be used for generating repetition links
+
+        - X_loc : np.ndarray [shape=(d2, n)]
+          Features to be used for generating local path links
+
+        - beats : np.ndarray [shape=(n,)]
+          Array of beat timings
+
+        - parameters : dict
+          Parameter dictionary as constructed by process_arguments()
+    '''
 
     # Find the segment boundaries
     print '\tpredicting segments...'
@@ -457,14 +515,18 @@ def do_segmentation(X_rep, X_loc, beats, parameters):
     L = sym_laplacian(A_combined)
 
     # Get the bottom k eigenvectors of L
-    Lf = factorize(L, k=1+MAX_REP)[0]
+    L_factors = factorize(L, k=1+MAX_REP)
+
+    # TODO:   2014-11-01 08:44:54 by Brian McFee <brian.mcfee@nyu.edu>
+    #   probably should return here, pick up the partition selection elsewhere  
 
     if parameters['num_types']:
-        boundaries, labels = fixed_partition(Lf, parameters['num_types'])
+        boundaries, labels = fixed_partition(L_factors,
+                                             parameters['num_types'])
     elif parameters['median']:
-        boundaries, labels = median_partition(Lf, k_min, k_max, beats)
+        boundaries, labels = median_partition(L_factors, k_min, k_max, beats)
     else:
-        boundaries, labels = label_clusterer(Lf, k_min, k_max)
+        boundaries, labels = label_clusterer(L_factors, k_min, k_max)
 
     # Output lab file
     print '\tsaving output to ', parameters['output_file']
@@ -518,4 +580,4 @@ if __name__ == '__main__':
     print '- ', os.path.basename(parameters['input_song'])
     X_cqt, X_timbre, beats = features(parameters['input_song'])
 
-    do_segmentation(X_cqt, X_timbre, beats, parameters)
+    lsd(X_cqt, X_timbre, beats, parameters)
