@@ -180,6 +180,21 @@ def features(filename):
 
 
 def save_segments(outfile, boundaries, beat_intervals, labels=None):
+    '''Save detected segments to a .lab file.
+
+    :parameters:
+        - outfile : str
+            Path to output file
+
+        - boundaries : list of int
+            Beat indices of detected segment boundaries
+
+        - beat_intervals : np.ndarray [shape=(n, 2)]
+            Intervals of beats
+
+        - labels : None or list of str
+            Labels of detected segments
+    '''
 
     if labels is None:
         labels = [('Seg#%03d' % idx) for idx in range(1, len(boundaries))]
@@ -343,6 +358,31 @@ def factorize(L, k=20):
 
 
 def label_rep_sections(X, boundaries, n_types):
+    '''Label repeated sections.
+
+    This is used to condense point-wise labels down to segment-wise labels.
+
+    Each segment's centroid is computed, and the centroids are clustered 
+    to produce labels.
+
+    :parameters:
+        - X : np.ndarray [shape=(d, n)]
+          Feature matrix (eg latent factors)
+
+        - boundaries : np.ndarray
+          Detected segment boundaries
+
+        - n_types : int > 0
+          Number of segment types
+
+    :returns:
+        - intervals : list of int
+          Detected segment intervals
+
+        - labels : list of str
+          Label for each segment
+    '''
+
     # Classify each segment centroid
     X_rep_stack = librosa.feature.sync(X, boundaries)
 
@@ -354,6 +394,22 @@ def label_rep_sections(X, boundaries, n_types):
 
 
 def fixed_partition(Lf, n_types):
+    '''Cluster data using a fixed number of partitions.
+
+    :parameters:
+        - Lf : np.ndarray [shape=(d, n)]
+          Latent factors
+
+        - n_types : int > 0, <= d
+          Number of segment types to allow.
+
+    :returns:
+        - boundaries : np.ndarray [shape=(m,)]
+          Indices of segment boundaries
+
+        - labels : np.ndarray [shape=(m,)]
+          Label indices of segment boundaries
+    '''
 
     # Build the affinity matrix on the first n_types-1 repetition features
     Y = librosa.util.normalize(Lf[:n_types].T, norm=2, axis=1)
@@ -396,6 +452,31 @@ def label_entropy(labels):
 
 
 def label_clusterer(Lf, k_min, k_max):
+    '''Automatically estimate the partition using maximum entropy labeling.
+
+    The number of component types if varied from k_min to k_max,
+    and the one which achieves highest label entropy (under an assumed 
+    iid multinomial assumption) while satisfying minimum average segment
+    durations is selected.
+
+    :parameters:
+        - Lf : np.ndarray [shape=(d, n)]
+          Latent factors
+
+        - k_min : int >= 2
+          Minimum number of segment types
+
+        - k_max : int > k_min
+          Maximum number of segment types
+
+    :returns:
+        - boundaries : np.ndarray [shape=(m,)]
+          Indices of segment boundaries
+
+        - labels : np.ndarray [shape=(m,)]
+          Label indices of segment boundaries
+    '''
+
     best_score      = -np.inf
     best_boundaries = [0, Lf.shape[1]]
     best_n_types    = 1
@@ -442,56 +523,24 @@ def label_clusterer(Lf, k_min, k_max):
     return best_boundaries, best_labels
 
 
-def median_partition(Lf, k_min, k_max, beat_intervals):
-    best_score      = -np.inf
-    best_boundaries = [0, Lf.shape[1]]
-    best_n_types    = 1
-    Y_best          = Lf[:1].T
-
-    label_dict = {}
-
-    # The trivial solution
-    label_dict[1]   = np.zeros(Lf.shape[1])
-
-    for n_types in range(2, 1+len(Lf)):
-        Y = librosa.util.normalize(Lf[:n_types].T, norm=2, axis=1)
-
-        # Try to label the data with n_types
-        C = sklearn.cluster.KMeans(n_clusters=n_types, n_init=100)
-        labels = C.fit_predict(Y)
-        label_dict[n_types] = labels
-
-        # Find the label change-points
-        boundaries = 1 + np.asarray(np.where(labels[:-1] != labels[1:])).reshape((-1,))
-
-        boundaries = np.unique(np.concatenate([[0], boundaries, [len(labels)]]))
-
-        # boundaries now include start and end markers; n-1 is the number of segments
-        feasible = (len(boundaries) > k_min)
-        durations = np.diff([beat_intervals[x, 0] for x in boundaries])
-        med_diff = np.median(durations)
-
-        score = -np.mean(np.abs(np.log(durations) - np.log(med_diff)))
-
-        if score > best_score and feasible:
-            best_boundaries = boundaries
-            best_n_types    = n_types
-            best_score      = score
-            Y_best          = Y
-
-    # Did we fail to find anything with enough boundaries?
-    # Take the last one then
-    if best_boundaries is None:
-        best_boundaries = boundaries
-        best_n_types    = n_types
-        Y_best          = librosa.util.normalize(Lf[:best_n_types].T, norm=2, axis=1)
-
-    intervals, best_labels = label_rep_sections(Y_best.T, best_boundaries, best_n_types)
-
-    return best_boundaries, best_labels
-
-
 def estimate_bandwidth(D, k):
+    '''Estimate the bandwidth of a gaussian kernel.
+
+    sigma is computed as the average distance between 
+    each point and its kth nearest neighbor.
+
+    :parameters:
+        - D : np.ndarray [shape=(n, n)]
+          A squared euclidean distance matrix
+
+        - k : int > 0
+          Number of neighbors to use
+
+    :returns:
+        - sigma : float > 0
+          Estimated bandwidth
+    '''
+
     D_sort = np.sort(D, axis=1)
 
     if 1 + k >= len(D):
@@ -502,6 +551,21 @@ def estimate_bandwidth(D, k):
 
 
 def self_similarity(X, k):
+    '''Construct a self-similarity matrix from a feature matrix.
+
+    :parameters:
+        - X : np.ndarray [shape=(d, n)]
+          Feature matrix, each column corresponds to one sample
+
+        - k : int > 0
+          Number of nearest neighbors to use when estimating the
+          kernel bandwidth
+
+    :returns:
+        - A = np.ndarray [shape=(n, n)]
+          Gaussian kernel matrix
+    '''
+
     D = scipy.spatial.distance.cdist(X.T, X.T, metric=METRIC)
     sigma = estimate_bandwidth(D, k)
     A = np.exp(-0.5 * (D / sigma))
@@ -580,11 +644,6 @@ def lsd(X_rep, X_loc, beat_intervals, parameters):
     if parameters['num_types']:
         boundaries, labels = fixed_partition(L_factors,
                                              parameters['num_types'])
-    elif parameters['median']:
-        boundaries, labels = median_partition(L_factors,
-                                              k_min,
-                                              k_max,
-                                              beat_intervals)
     else:
         boundaries, labels = label_clusterer(L_factors, k_min, k_max)
 
@@ -616,12 +675,6 @@ def process_arguments(args):
                         type=int,
                         default=None,
                         help='fix the number of segment types')
-
-    parser.add_argument('--median',
-                        dest='median',
-                        action='store_true',
-                        default=False,
-                        help='select partition by minimizing median deviation')
 
     parser.add_argument('input_song',
                         action='store',
