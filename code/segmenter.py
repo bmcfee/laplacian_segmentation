@@ -128,7 +128,7 @@ def features(filename):
     y, sr = librosa.load(filename, sr=SR)
 
     print '\t[2/5] Separating harmonic and percussive signals'
-    y_perc, y_harm = librosa.effects.hpss(y)
+    y_harm, y_perc = librosa.effects.hpss(y)
 
     print '\t[3/5] detecting beats'
     bpm, beats = get_beats(y=y_perc, sr=sr, hop_length=HOP_LENGTH)
