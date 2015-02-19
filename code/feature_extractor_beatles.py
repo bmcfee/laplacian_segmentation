@@ -83,10 +83,10 @@ def import_data(audio, label, rootpath, output_path):
                 print audio, 'cached!'
         else:
             try:
-                X, B     = features(audio)
+                X_c, X_t, B     = features(audio)
                 Y, T, L  = align_segmentation(label, B)
                 
-                Data = {'features':         X, 
+                Data = {'features':         (X_c, X_t), 
                         'beats':            B, 
                         'filename':         audio, 
                         'segment_times':    T,

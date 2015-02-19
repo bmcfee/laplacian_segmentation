@@ -83,12 +83,12 @@ def import_data(song, rootpath, output_path):
                 print song, 'cached!'
         else:
             try:
-                X, B     = features(song)
+                X_c, X_t, B     = features(song)
                 Y, T, L  = align_segmentation(get_annotation(song, rootpath), B)
                 
-                Data = {'features': X, 
-                        'beats': B, 
-                        'filename': song, 
+                Data = {'features': (X_c, X_t),
+                        'beats': B,
+                        'filename': song,
                         'segment_times': T,
                         'segment_labels': L,
                         'segments': Y}
