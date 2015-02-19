@@ -31,7 +31,7 @@ def align_segmentation(filename, beat_times):
             list of segment labels
     '''
     
-    segment_intervals, segment_labels = mir_eval.io.load_intervals(filename)
+    segment_intervals, segment_labels = mir_eval.io.load_labeled_intervals(filename)
 
     # Map beats to intervals
     beat_intervals    = np.asarray(zip(beat_times[:-1], beat_times[1:]))

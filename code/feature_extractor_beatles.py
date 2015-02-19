@@ -41,7 +41,7 @@ def align_segmentation(filename, beat_times):
     '''
     
     # These labels have both begin and end times
-    segment_times, segment_labels = mir_eval.io.load_intervals(filename)
+    segment_times, segment_labels = mir_eval.io.load_labeled_intervals(filename)
 
     # Compute beat intervals
     beat_intervals = np.asarray(zip(beat_times[:-1], beat_times[1:]))
