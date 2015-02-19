@@ -6,6 +6,7 @@ If run as a program, usage is:
 '''
 
 
+import sys
 import os
 import cPickle as pickle
 
