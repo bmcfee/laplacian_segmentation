@@ -26,4 +26,4 @@ if __name__ == '__main__':
     print '- ', os.path.basename(parameters['input_song'])
     X, beats     = features(parameters['input_song'])
 
-    segmenter.do_segmentation(X, beats, parameters)
+    segmenter.lsd(X[0], X[1], beats, parameters)
