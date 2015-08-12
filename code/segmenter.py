@@ -125,7 +125,9 @@ def features(filename):
           Timing of beat intervals
     '''
     print '\t[1/5] loading audio'
-    y, sr = librosa.load(filename, sr=SR)
+    y, sr = librosa.load(filename, sr=None)
+    y = librosa.resample(y, sr, SR, res_type='sinc_fastest')
+    sr = SR
 
     print '\t[2/5] Separating harmonic and percussive signals'
     y_harm, y_perc = librosa.effects.hpss(y)
@@ -448,7 +450,7 @@ def label_entropy(labels):
 
     hits = hits / hits.sum()
 
-    return scipy.stats.entropy(labels)
+    return scipy.stats.entropy(hits)
 
 
 def label_clusterer(Lf, k_min, k_max):
