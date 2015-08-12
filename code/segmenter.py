@@ -446,7 +446,7 @@ def label_entropy(labels):
     hits = np.zeros(len(values))
 
     for v in values:
-        hits[v] = np.sum(values == v)
+        hits[v] = np.sum(labels == v)
 
     hits = hits / hits.sum()
 
