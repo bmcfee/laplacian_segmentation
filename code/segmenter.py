@@ -21,7 +21,7 @@ import scipy.linalg
 
 import sklearn.cluster
 
-# Requires librosa-develop 0.3 branch
+# Requires librosa 0.4.2
 import librosa
 
 # Suppress neighbor links within REP_WIDTH beats of the current one
@@ -124,18 +124,18 @@ def features(filename):
         - beat_times : np.ndarray [shape=(n, 2)]
           Timing of beat intervals
     '''
-    print '\t[1/5] loading audio'
+    print('\t[1/5] loading audio')
     y, sr = librosa.load(filename, sr=None)
     y = librosa.resample(y, sr, SR, res_type='sinc_fastest')
     sr = SR
 
-    print '\t[2/5] Separating harmonic and percussive signals'
+    print('\t[2/5] Separating harmonic and percussive signals')
     y_harm, y_perc = librosa.effects.hpss(y)
 
-    print '\t[3/5] detecting beats'
+    print('\t[3/5] detecting beats')
     bpm, beats = get_beats(y=y_perc, sr=sr, hop_length=HOP_LENGTH)
 
-    print '\t[4/5] generating CQT'
+    print('\t[4/5] generating CQT')
     X_cqt = librosa.cqt(y=y_harm,
                         sr=sr,
                         hop_length=HOP_LENGTH,
@@ -147,7 +147,7 @@ def features(filename):
     X_cqt = librosa.logamplitude(X_cqt**2.0, ref_power=np.max)
 
     # Compute MFCCs
-    print '\t[5/5] generating MFCC'
+    print('\t[5/5] generating MFCC')
     X_melspec = librosa.feature.melspectrogram(y=y,
                                                sr=sr,
                                                hop_length=HOP_LENGTH,
@@ -172,7 +172,7 @@ def features(filename):
     # the output intervals to span the entire track.
     beat_times = np.concatenate([beat_times, [float(len(y)) / sr]])
 
-    beat_intervals = np.asarray(zip(beat_times[:-1], beat_times[1:]))
+    beat_intervals = np.c_[beat_times[:-1], beat_times[1:]]
 
     # Synchronize the feature matrices
     X_cqt = librosa.feature.sync(X_cqt, beats, aggregate=np.median)
@@ -364,7 +364,7 @@ def label_rep_sections(X, boundaries, n_types):
 
     This is used to condense point-wise labels down to segment-wise labels.
 
-    Each segment's centroid is computed, and the centroids are clustered 
+    Each segment's centroid is computed, and the centroids are clustered
     to produce labels.
 
     :parameters:
@@ -457,7 +457,7 @@ def label_clusterer(Lf, k_min, k_max):
     '''Automatically estimate the partition using maximum entropy labeling.
 
     The number of component types if varied from k_min to k_max,
-    and the one which achieves highest label entropy (under an assumed 
+    and the one which achieves highest label entropy (under an assumed
     iid multinomial assumption) while satisfying minimum average segment
     durations is selected.
 
@@ -528,7 +528,7 @@ def label_clusterer(Lf, k_min, k_max):
 def estimate_bandwidth(D, k):
     '''Estimate the bandwidth of a gaussian kernel.
 
-    sigma is computed as the average distance between 
+    sigma is computed as the average distance between
     each point and its kth nearest neighbor.
 
     :parameters:
@@ -592,7 +592,7 @@ def lsd(X_rep, X_loc, beat_intervals, parameters):
     '''
 
     # Find the segment boundaries
-    print '\tpredicting segments...'
+    print('\tpredicting segments...')
     k_min, k_max = get_num_segs(beat_intervals[-1, -1], MIN_SEG, MAX_SEG)
 
     # Get the raw recurrence plot
@@ -641,7 +641,7 @@ def lsd(X_rep, X_loc, beat_intervals, parameters):
     L_factors = factorize(L, k=1+MAX_REP)
 
     # TODO:   2014-11-01 08:44:54 by Brian McFee <brian.mcfee@nyu.edu>
-    #   probably should return here, pick up the partition selection elsewhere  
+    #   probably should return here, pick up the partition selection elsewhere
 
     if parameters['num_types']:
         boundaries, labels = fixed_partition(L_factors,
@@ -650,7 +650,7 @@ def lsd(X_rep, X_loc, beat_intervals, parameters):
         boundaries, labels = label_clusterer(L_factors, k_min, k_max)
 
     # Output lab file
-    print '\tsaving output to ', parameters['output_file']
+    print('\tsaving output to ', parameters['output_file'])
     save_segments(parameters['output_file'],
                   boundaries,
                   beat_intervals,
@@ -695,7 +695,7 @@ if __name__ == '__main__':
     parameters = process_arguments(sys.argv[1:])
 
     # Load the features
-    print '- ', os.path.basename(parameters['input_song'])
+    print('- ', os.path.basename(parameters['input_song']))
     X_cqt, X_timbre, beat_intervals = features(parameters['input_song'])
 
     lsd(X_cqt, X_timbre, beat_intervals, parameters)
